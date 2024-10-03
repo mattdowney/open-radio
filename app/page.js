@@ -199,7 +199,9 @@ const Radio = () => {
     }
   };
 
-  const playNext = async () => {
+  const playNext = async (autoAdvance = false) => {
+    console.log(`Playing next track. Auto advance: ${autoAdvance}`);
+
     setState((prevState) => ({
       ...prevState,
       hasUserInteracted: true,
@@ -223,7 +225,20 @@ const Radio = () => {
       }));
     }
 
-    const nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
+    let nextIndex;
+    if (autoAdvance) {
+      // For automatic advancement, use the next index in the playlist
+      nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
+    } else {
+      // For manual advancement, choose a random next track
+      do {
+        nextIndex = Math.floor(Math.random() * state.playlist.length);
+      } while (
+        nextIndex === state.currentTrackIndex &&
+        state.playlist.length > 1
+      );
+    }
+
     const videoId = state.playlist[nextIndex];
 
     // Wait for fade-out
@@ -303,7 +318,7 @@ const Radio = () => {
         }));
         break;
       case YT.PlayerState.ENDED:
-        playNext();
+        playNext(true); // Pass true to indicate automatic advancement
         break;
       default:
         break;
@@ -400,7 +415,7 @@ const Radio = () => {
   };
 
   const handleNextTrack = () => {
-    playNext();
+    playNext(false); // Pass false to indicate manual advancement
   };
 
   useEffect(() => {
@@ -413,6 +428,11 @@ const Radio = () => {
       marqueeContent.style.animationDuration = `${duration}s`;
     }
   }, [state.videoDetails.title]);
+
+  // Add this function to check the title length
+  const isTitleShort = (title) => {
+    return (title || '').length <= 16;
+  };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen w-screen">
@@ -479,12 +499,12 @@ const Radio = () => {
                   top: '50%',
                   left: '50%',
                   transform: 'translate(-50%, -50%)',
-                  padding: '20px',
+                  padding: '15px',
                   maxWidth: '90%',
                   maxHeight: '90%',
                 }}
               >
-                <div className="ui-controls-wrapper bg-none bg-white/20 md:backdrop-blur-lg py-12 px-16 rounded-[45px] text-center shadow-[0px_100px_100px_rgba(0,0,0,0.2) border-none md:border-white/10 md:border-[1px]">
+                <div className="ui-controls-wrapper bg-none bg-white/20 md:backdrop-blur-lg py-12 px-16 rounded-[45px] text-center shadow-[0px_100px_100px_rgba(0,0,0,0.2) border-none md:border-white/10 md:border-[1px] w-5/12">
                   <div
                     className={`recordPlayer relative w-40 h-40 overflow-hidden mb-5 rounded-full spin-animation mx-auto ${
                       state.isPlaying ? 'playing' : ''
@@ -516,21 +536,33 @@ const Radio = () => {
                     </div>
                   </div>
                   <div className="mb-4" key={state.videoDetails.localizedTitle}>
-                    <h1 className="text-black font-marfa mb-1.5 normal-case marquee marquee-gradient">
-                      <div
-                        className="marquee-content"
-                        data-text={
-                          state.videoDetails.localizedTitle || 'Loading...'
-                        }
-                        key={state.videoDetails.localizedTitle}
-                        style={{
-                          animationPlayState: state.isPlaying
-                            ? 'running'
-                            : 'paused',
-                        }}
-                      >
-                        {state.videoDetails.localizedTitle || 'Loading...'}
-                      </div>
+                    <h1
+                      className={`text-black font-marfa mb-1.5 normal-case ${
+                        isTitleShort(state.videoDetails.localizedTitle)
+                          ? 'no-marquee'
+                          : 'marquee marquee-gradient'
+                      }`}
+                    >
+                      {isTitleShort(state.videoDetails.localizedTitle) ? (
+                        <div className="no-marquee-content">
+                          {state.videoDetails.localizedTitle || 'Loading...'}
+                        </div>
+                      ) : (
+                        <div
+                          className="marquee-content"
+                          data-text={
+                            state.videoDetails.localizedTitle || 'Loading...'
+                          }
+                          key={state.videoDetails.localizedTitle}
+                          style={{
+                            animationPlayState: state.isPlaying
+                              ? 'running'
+                              : 'paused',
+                          }}
+                        >
+                          {state.videoDetails.localizedTitle || 'Loading...'}
+                        </div>
+                      )}
                     </h1>
                     <div className="countdown mt-1 mb-1.5 text-black font-mono">
                       {state.isCountdownLoading ? (
@@ -630,7 +662,7 @@ const Radio = () => {
 
               <div className="close">
                 <a
-                  className="opacity-70 hover:opacity-100 absolute top-[calc(env(safe-area-inset-bottom)+1.25rem)] right-[1.25rem] transition-all duration-200 ease-in-out z-30"
+                  className="opacity-20 hover:opacity-100 absolute top-[calc(env(safe-area-inset-bottom)+1.25rem)] right-[1.25rem] transition-all duration-200 ease-in-out z-30"
                   href="https://www.mattdowney.com"
                   rel="noopener noreferrer"
                 >
@@ -670,13 +702,13 @@ const Radio = () => {
 
           <style jsx>{`
             .marquee {
-              width: 200px; /* Adjust as needed */
+              width: 100%; /* Adjust as needed */
               overflow: hidden;
               white-space: nowrap;
               box-sizing: border-box;
               position: relative;
               text-align: left;
-              padding-left: 20px; // Add left padding
+              padding-left: 15%; // Add left padding
             }
 
             .marquee-content {
@@ -728,6 +760,17 @@ const Radio = () => {
 
             .marquee-content::after {
               left: calc(200% + 20px); // Adjust for padding
+            }
+
+            .no-marquee {
+              text-align: center;
+              padding: 0 15px;
+            }
+
+            .no-marquee-content {
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
           `}</style>
         </>

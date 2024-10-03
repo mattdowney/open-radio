@@ -132,13 +132,13 @@ body {
 
 @keyframes spinAndPulse {
   0% {
-    transform: rotate(0deg) scale(1.25);
+    transform: rotate(0deg) scale(1.75);
   }
   50% {
-    transform: rotate(180deg) scale(3.75);
+    transform: rotate(180deg) scale(3.5);
   }
   100% {
-    transform: rotate(360deg) scale(1.25);
+    transform: rotate(360deg) scale(1.75);
   }
 }
 
@@ -179,7 +179,7 @@ body {
 }
 
 .pace .pace-progress {
-  background: #0c0e10;
+  background: rgba(251, 251, 251, 0.5);
   position: fixed;
   z-index: 2000;
   top: 0;
