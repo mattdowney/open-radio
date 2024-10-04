@@ -640,23 +640,6 @@ const Radio = () => {
                       </svg>
                     </button>
                   </div>
-
-                  {/* <div className="ui-buttons relative z-20 mb-0 flex items-center justify-between">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={state.volume}
-                      onChange={handleVolumeChange}
-                      className="volume cursor-pointer"
-                      style={{
-                        background: `linear-gradient(to right, #00020B 0%, #00020B ${state.volume}%, rgba(0, 2, 11, 0.2) ${state.volume}%, rgba(0, 2, 11, 0.2) 100%)`,
-                        backgroundSize: '100% 6px',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'center',
-                      }}
-                    />
-                  </div> */}
                 </div>
               </div>
 
@@ -699,80 +682,6 @@ const Radio = () => {
               }
             `}
           </Script>
-
-          <style jsx>{`
-            .marquee {
-              width: 100%; /* Adjust as needed */
-              overflow: hidden;
-              white-space: nowrap;
-              box-sizing: border-box;
-              position: relative;
-              text-align: left;
-              padding-left: 15%; // Add left padding
-            }
-
-            .marquee-content {
-              display: inline-block;
-              white-space: nowrap;
-              animation: marquee 10s linear infinite;
-              animation-play-state: paused;
-              position: relative;
-              padding-right: 15%;
-            }
-
-            .marquee-gradient {
-              -webkit-mask-image: linear-gradient(
-                to right,
-                transparent,
-                black 15%,
-                black 85%,
-                transparent 100%
-              );
-              mask-image: linear-gradient(
-                to right,
-                transparent,
-                black 15%,
-                black 85%,
-                transparent 100%
-              );
-            }
-
-            @keyframes marquee {
-              0% {
-                transform: translateX(0);
-              }
-              100% {
-                transform: translateX(calc(-100% - 20px)); // Adjust for padding
-              }
-            }
-
-            .marquee-content::before,
-            .marquee-content::after {
-              content: attr(data-text);
-              position: absolute;
-              white-space: nowrap;
-              padding-right: 15%;
-            }
-
-            .marquee-content::before {
-              left: calc(100% + 20px); // Adjust for padding
-            }
-
-            .marquee-content::after {
-              left: calc(200% + 20px); // Adjust for padding
-            }
-
-            .no-marquee {
-              text-align: center;
-              padding: 0 15px;
-            }
-
-            .no-marquee-content {
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-          `}</style>
         </>
       )}
     </div>

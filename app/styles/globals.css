@@ -206,3 +206,76 @@ body {
 .pace .pace-activity {
   display: none;
 }
+
+/* Marquee styles */
+.marquee {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  position: relative;
+  text-align: left;
+  padding-left: 15%;
+}
+
+.marquee-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 10s linear infinite;
+  animation-play-state: paused;
+  position: relative;
+  padding-right: 15%;
+}
+
+.marquee-gradient {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-100% - 20px));
+  }
+}
+
+.marquee-content::before,
+.marquee-content::after {
+  content: attr(data-text);
+  position: absolute;
+  white-space: nowrap;
+  padding-right: 15%;
+}
+
+.marquee-content::before {
+  left: calc(100% + 20px);
+}
+
+.marquee-content::after {
+  left: calc(200% + 20px);
+}
+
+.no-marquee {
+  text-align: center;
+  padding: 0 15px;
+}
+
+.no-marquee-content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
