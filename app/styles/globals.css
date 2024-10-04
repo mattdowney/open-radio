@@ -28,78 +28,7 @@ body {
   overflow: hidden;
   margin: 0;
   padding: 0;
-  background-color: #fffeff;
-}
-
-/* Volume */
-
-.volume {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 5px;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 500px;
-}
-
-.volume::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 500px;
-}
-
-.volume::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 0;
-  height: 0;
-  background: transparent;
-}
-
-.volume:focus {
-  outline: none;
-}
-
-.volume::-moz-range-track {
-  width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 500px;
-}
-
-.volume::-moz-range-thumb {
-  appearance: none;
-  width: 0;
-  height: 0;
-  background: transparent;
-}
-
-.volume::-ms-track {
-  width: 100%;
-  height: 5px;
-  background: transparent;
-  border-color: transparent;
-  color: transparent;
-  border-radius: 500px;
-}
-
-.volume::-ms-thumb {
-  appearance: none;
-  width: 0;
-  height: 0;
-  background: transparent;
-}
-
-.volume::-ms-fill-lower {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 500px;
-}
-
-.volume::-ms-fill-upper {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 500px;
+  background-color: #00020b !important;
 }
 
 /* Animations */
@@ -114,7 +43,7 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 1000ms ease-out forwards;
+  animation: fadeIn 100ms ease-out forwards;
 }
 
 @keyframes fadeOut {
@@ -127,7 +56,7 @@ body {
 }
 
 .fade-out {
-  animation: fadeOut 1000ms ease-out forwards;
+  animation: fadeOut 100ms ease-out forwards;
 }
 
 @keyframes spinAndPulse {
@@ -143,7 +72,7 @@ body {
 }
 
 .animate-spin-pulse {
-  animation: spinAndPulse 60s infinite;
+  animation: spinAndPulse 100s infinite;
 }
 
 @keyframes spin {

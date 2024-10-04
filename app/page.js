@@ -214,6 +214,25 @@ const Radio = () => {
       currentTime: 0,
     }));
 
+    let nextIndex;
+    if (state.playedSongs.length === state.playlist.length - 1) {
+      // All songs have been played, reset playedSongs
+      setState((prevState) => ({ ...prevState, playedSongs: [] }));
+      nextIndex = state.playlist.findIndex(
+        (id) => !state.playedSongs.includes(id),
+      );
+    } else {
+      // Find a song that hasn't been played yet
+      do {
+        nextIndex = Math.floor(Math.random() * state.playlist.length);
+      } while (
+        state.playedSongs.includes(state.playlist[nextIndex]) ||
+        nextIndex === state.currentTrackIndex
+      );
+    }
+
+    const videoId = state.playlist[nextIndex];
+
     // Add current song to playedSongs before moving to next
     if (state.playlist[state.currentTrackIndex]) {
       setState((prevState) => ({
@@ -224,22 +243,6 @@ const Radio = () => {
         ],
       }));
     }
-
-    let nextIndex;
-    if (autoAdvance) {
-      // For automatic advancement, use the next index in the playlist
-      nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
-    } else {
-      // For manual advancement, choose a random next track
-      do {
-        nextIndex = Math.floor(Math.random() * state.playlist.length);
-      } while (
-        nextIndex === state.currentTrackIndex &&
-        state.playlist.length > 1
-      );
-    }
-
-    const videoId = state.playlist[nextIndex];
 
     // Wait for fade-out
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -272,14 +275,6 @@ const Radio = () => {
 
   const onPlayerStateChange = (event) => {
     console.log('Player state changed:', event.data);
-    console.log('Current player state:', playerRef.current.getPlayerState());
-    console.log(
-      'Available playback rates:',
-      playerRef.current.getAvailablePlaybackRates(),
-    );
-    console.log('Current playback rate:', playerRef.current.getPlaybackRate());
-    console.log('Video URL:', playerRef.current.getVideoUrl());
-    console.log('Video embed code:', playerRef.current.getVideoEmbedCode());
 
     switch (event.data) {
       case YT.PlayerState.PLAYING:
@@ -318,6 +313,7 @@ const Radio = () => {
         }));
         break;
       case YT.PlayerState.ENDED:
+        console.log('Track ended, playing next');
         playNext(true); // Pass true to indicate automatic advancement
         break;
       default:
@@ -431,11 +427,11 @@ const Radio = () => {
 
   // Add this function to check the title length
   const isTitleShort = (title) => {
-    return (title || '').length <= 16;
+    return (title || '').length <= 24;
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen w-screen">
+    <div className="flex flex-col items-center justify-center h-screen w-screen bg-black">
       {!state.error && (
         <>
           <div id="radio-player"></div>
@@ -458,7 +454,7 @@ const Radio = () => {
                     <filter id="gaussian-blur">
                       <feGaussianBlur
                         in="SourceGraphic"
-                        stdDeviation="80"
+                        stdDeviation="50"
                         result="blur1"
                       />
                       <feColorMatrix
@@ -492,26 +488,18 @@ const Radio = () => {
               </div>
 
               <div
-                className={`ui-controls flex flex-col items-center justify-center fixed inset-0 z-10 transition-opacity duration-500 ${
+                className={`ui-controls flex flex-col items-center justify-center fixed inset-0 z-10 transition-opacity duration-500 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-4 sm:p-6 md:p-7 w-full max-w-full max-h-full ${
                   state.isInitialLoad ? 'opacity-0' : 'opacity-100'
                 }`}
-                style={{
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  padding: '15px',
-                  maxWidth: '90%',
-                  maxHeight: '90%',
-                }}
               >
-                <div className="ui-controls-wrapper bg-none bg-white/20 md:backdrop-blur-lg py-12 px-16 rounded-[45px] text-center shadow-[0px_100px_100px_rgba(0,0,0,0.2) border-none md:border-white/10 md:border-[1px] w-5/12">
+                <div className="ui-controls-wrapper bg-white/20 md:backdrop-blur-lg py-8 md:py-12 px-6 sm:px-8 md:px-16 rounded-[45px] text-center shadow-[0px_100px_100px_rgba(0,0,0,0.2)] border-none md:border-white/10 md:border-[1px] w-10/12 md:w-5/12 lg:w-1/2 xl:w-3/12">
                   <div
-                    className={`recordPlayer relative w-40 h-40 overflow-hidden mb-5 rounded-full spin-animation mx-auto ${
+                    className={`recordPlayer relative w-36 h-36 xl:w-40 xl:h-40 overflow-hidden mb-5 rounded-full spin-animation mx-auto text-center ${
                       state.isPlaying ? 'playing' : ''
                     }`}
                   >
                     <img
-                      className={`record-image absolute inset-0 object-cover z-10 w-full h-full opacity-100 scale-150`}
+                      className={`record-image absolute inset-0 object-cover z-10 w-full h-full opacity-100 scale-[125%]`}
                       src={state.albumCoverUrl}
                       alt={state.videoDetails.title}
                       onLoad={handleImageLoaded}
@@ -524,6 +512,9 @@ const Radio = () => {
                       <div className="absolute inset-6 border-[1px] border-black/40 rounded-full"></div>
                       <div className="absolute inset-8 border-[1px] border-black/40 rounded-full"></div>
                       <div className="absolute inset-10 border-[1px] border-black/40 rounded-full"></div>
+                      Culpa tempor amet culpa in eu eiusmod amet. Id sunt id
+                      aute eiusmod deserunt. Ex proident esse ea irure officia
+                      quis nisi reprehenderit nulla nulla fugiat.
                       <div className="absolute inset-12 border-[1px] border-black/40 rounded-full"></div>
                       <div className="absolute inset-14 border-[1px] border-black/40 rounded-full"></div>
                       <div className="absolute inset-16 border-[1px] border-black/40 rounded-full"></div>
