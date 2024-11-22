@@ -637,7 +637,7 @@ const Radio = () => {
               <div className="close">
                 <a
                   className="opacity-20 hover:opacity-100 absolute top-[calc(env(safe-area-inset-bottom)+1.25rem)] right-[1.25rem] transition-all duration-200 ease-in-out z-30"
-                  href="https://www.mattdowney.com"
+                  href="https://mattdowney.com"
                   rel="noopener noreferrer"
                 >
                   <svg
