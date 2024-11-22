@@ -6,7 +6,7 @@ import { shuffle } from 'lodash';
 
 const Radio = () => {
   const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
-  const playlistId = 'PLBtA_Wr4VtP8lPRqTDWvGK-pSLqTdWwep';
+  const playlistId = 'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
 
   const playerRef = useRef(null);
   const [state, setState] = useState({
@@ -492,14 +492,14 @@ const Radio = () => {
                   state.isInitialLoad ? 'opacity-0' : 'opacity-100'
                 }`}
               >
-                <div className="ui-controls-wrapper bg-white/20 md:backdrop-blur-lg py-8 md:py-12 px-6 sm:px-8 md:px-16 rounded-[45px] text-center shadow-[0px_100px_100px_rgba(0,0,0,0.2)] border-none md:border-white/10 md:border-[1px] w-10/12 md:w-5/12 lg:w-1/2 xl:w-3/12">
+                <div className="ui-controls-wrapper bg-white/20 md:backdrop-blur-lg py-8 md:py-12 px-6 sm:px-8 md:px-16 rounded-[0.75rem] text-center shadow-[0px_100px_100px_rgba(0,0,0,0.2)] border-none md:border-white/10 md:border-[1px] w-10/12 md:w-5/12 lg:w-1/2 xl:w-3/12">
                   <div
                     className={`recordPlayer relative w-36 h-36 xl:w-40 xl:h-40 overflow-hidden mb-5 rounded-full spin-animation mx-auto text-center ${
                       state.isPlaying ? 'playing' : ''
                     }`}
                   >
                     <img
-                      className={`record-image absolute inset-0 object-cover z-10 w-full h-full opacity-100 scale-[125%]`}
+                      className={`record-image absolute inset-0 object-cover z-10 w-full h-full opacity-100 scale-[175%]`}
                       src={state.albumCoverUrl}
                       alt={state.videoDetails.title}
                       onLoad={handleImageLoaded}
