@@ -52,6 +52,22 @@ module.exports = {
           'Segoe UI Symbol',
         ],
       },
+      animation: {
+        'spin-fast': 'spin 0.6s linear infinite',
+        'fade-in-dramatic': 'fadeInDramatic 1.2s ease-out forwards',
+      },
+      keyframes: {
+        fadeInDramatic: {
+          '0%': {
+            opacity: '0',
+            transform: 'scale(1)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'scale(1)',
+          },
+        },
+      },
     },
   },
   plugins: [],
