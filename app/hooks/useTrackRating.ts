@@ -19,7 +19,7 @@ const initialState: RatingState = {
 export const useTrackRating = (trackId: string) => {
   const [state, setState] = useState<RatingState>(initialState);
   const prevTrackIdRef = useRef<string>(trackId);
-  const pollTimeoutRef = useRef<NodeJS.Timeout>();
+  const pollTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Reset state when trackId changes
   useEffect(() => {
