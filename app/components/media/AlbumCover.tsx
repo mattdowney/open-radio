@@ -78,6 +78,11 @@ export function AlbumCover({
         size === 'lg' ? 'rounded-lg' : 'rounded-md',
         className,
       )}
+      style={{
+        willChange: 'transform, opacity',
+        backfaceVisibility: 'hidden',
+        transform: 'translateZ(0)',
+      }}
     >
       {blurDataURL && (
         <Image
@@ -94,11 +99,16 @@ export function AlbumCover({
         fill
         sizes={`${imageSize}px`}
         className={cn(
-          'object-cover transition-all duration-200 rounded-[inherit]',
+          'object-cover rounded-[inherit]',
+          'transition-all duration-300 ease-in-out',
           imageLoading
-            ? 'scale-105 blur-sm opacity-0'
+            ? 'scale-[105%] blur-sm opacity-0'
             : 'scale-[102%] blur-0 opacity-100',
         )}
+        style={{
+          willChange: 'transform, opacity, filter',
+          backfaceVisibility: 'hidden',
+        }}
         onLoadingComplete={() => {
           setImageLoading(false);
           // Preload next quality if available
@@ -112,7 +122,10 @@ export function AlbumCover({
       />
       {imageLoading && (
         <Skeleton
-          className="absolute inset-0 rounded-[inherit]"
+          className={cn(
+            'absolute inset-0 rounded-[inherit]',
+            'transition-opacity duration-300 ease-in-out',
+          )}
           animate={false}
         />
       )}

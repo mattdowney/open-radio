@@ -119,11 +119,14 @@ const Radio = () => {
 
   const handleImageLoaded = () => {
     if (!state.isTransitioning) {
-      setState((prevState) => ({
-        ...prevState,
-        imageLoaded: true,
-        isInitialLoad: false,
-      }));
+      // Use requestAnimationFrame to ensure smooth state updates
+      requestAnimationFrame(() => {
+        setState((prevState) => ({
+          ...prevState,
+          imageLoaded: true,
+          isInitialLoad: false,
+        }));
+      });
     }
   };
 
@@ -815,15 +818,6 @@ const Radio = () => {
       return;
     }
 
-    // Verify the track is in the upcoming queue if not auto-advancing
-    if (
-      !autoAdvance &&
-      !state.playbackQueue.upcomingTracks.includes(nextTrackId)
-    ) {
-      console.error('Attempted to play track not in queue:', nextTrackId);
-      return;
-    }
-
     setState((prevState) => ({
       ...prevState,
       hasUserInteracted: true,
@@ -833,8 +827,6 @@ const Radio = () => {
     }));
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
       // Get track details from validated tracks or validate now
       const validatedTrack = state.playbackQueue.validatedTracks.find(
         (vt) => vt.id === nextTrackId,
@@ -890,6 +882,7 @@ const Radio = () => {
       // Update the queue with the new current track
       await updatePlaybackQueue(nextTrackId, newIndex);
 
+      // Use requestAnimationFrame for smooth state updates
       await new Promise((resolve) => requestAnimationFrame(resolve));
 
       setState((prevState) => ({
@@ -1219,7 +1212,10 @@ const Radio = () => {
                       </svg>
 
                       <div
-                        className="absolute inset-0 overflow-hidden"
+                        className={cn(
+                          'absolute inset-0 overflow-hidden bg-white/10',
+                          'transition-opacity duration-300 ease-in-out',
+                        )}
                         style={{
                           backfaceVisibility: 'hidden',
                           transform: 'translateZ(0)',
