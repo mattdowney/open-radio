@@ -5,26 +5,72 @@ import Script from 'next/script';
 import { shuffle } from 'lodash';
 import Loading from './components/ui/Loading';
 import LeftPanel from './components/layout/LeftPanel';
-import { Track } from './types/track';
+import { Track, PlayerState, ValidatedTrack } from './types/track';
 import { cn } from './lib/utils';
 
-interface YouTubePlayer {
-  destroy: () => void;
-  loadVideoById: (videoId: string) => void;
-  playVideo: () => void;
-  pauseVideo: () => void;
-  setVolume: (volume: number) => void;
+declare namespace YT {
+  class Player {
+    constructor(elementId: string, options: PlayerOptions);
+    destroy(): void;
+    loadVideoById(videoId: string, startSeconds?: number): void;
+    playVideo(): void;
+    pauseVideo(): void;
+    setVolume(volume: number): void;
+    seekTo(seconds: number, allowSeekAhead: boolean): void;
+    getPlayerState(): number;
+    getDuration(): number;
+    getCurrentTime(): number;
+  }
+
+  interface PlayerOptions {
+    height?: string | number;
+    width?: string | number;
+    videoId?: string;
+    playerVars?: {
+      autoplay?: 0 | 1;
+      controls?: 0 | 1;
+      disablekb?: 0 | 1;
+      enablejsapi?: 0 | 1;
+      fs?: 0 | 1;
+      modestbranding?: 0 | 1;
+      playsinline?: 0 | 1;
+      rel?: 0 | 1;
+      origin?: string;
+      start?: number;
+    };
+    events?: {
+      onReady?: (event: { target: Player }) => void;
+      onStateChange?: (event: { target: Player; data: number }) => void;
+      onError?: (event: { target: Player; data: number }) => void;
+    };
+  }
+
+  enum PlayerState {
+    UNSTARTED = -1,
+    ENDED = 0,
+    PLAYING = 1,
+    PAUSED = 2,
+    BUFFERING = 3,
+    CUED = 5,
+  }
 }
 
-interface ValidatedTrack {
-  id: string;
-  details: {
-    artist: string;
-    title: string;
-    localizedTitle: string;
-    albumCoverUrl: string;
-  };
-  isValid: boolean;
+declare global {
+  interface Window {
+    YT: typeof YT;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
+interface YouTubePlayer extends YT.Player {
+  loadVideoById(videoId: string, startSeconds?: number): void;
+  playVideo(): void;
+  pauseVideo(): void;
+  setVolume(volume: number): void;
+  seekTo(seconds: number, allowSeekAhead: boolean): void;
+  getPlayerState(): number;
+  getDuration(): number;
+  getCurrentTime(): number;
 }
 
 interface YouTubePlayerState {
@@ -36,59 +82,13 @@ interface YouTubePlayerState {
   CUED: 5;
 }
 
-interface PlayerState {
-  isPlaying: boolean;
-  isPlayerReady: boolean;
-  isLoadingNext: boolean;
-  currentTrackIndex: number;
-  playlist: string[];
-  videoDetails: {
-    artist: string;
-    title: string;
-    localizedTitle: string;
-  };
-  albumCoverUrl: string;
-  volume: number;
-  lastVolume: number;
-  isContentVisible: boolean;
-  imageLoaded: boolean;
-  isInitialLoad: boolean;
-  isTrackLoaded: boolean;
-  hasUserInteracted: boolean;
-  isInitialPlay: boolean;
-  playedSongs: string[];
-  isTransitioning: boolean;
-  isUIReady: boolean;
-  error?: string;
-  nextTrack: {
-    videoId: string | null;
-    details: any | null;
-    imageLoaded: boolean;
-  };
-  upcomingTracks: Track[];
-  validatedTracks: ValidatedTrack[];
-  playbackQueue: {
-    currentTrack: string | null;
-    upcomingTracks: string[];
-    validatedTracks: ValidatedTrack[];
-    playedTracks: string[];
-  };
+interface YouTubeEvent {
+  target: YouTubePlayer;
+  data: number;
 }
 
-interface Track {
-  id: string;
-  title: string;
-  albumCoverUrl: string;
-}
-
-declare global {
-  interface Window {
-    YT: {
-      Player: any;
-      PlayerState: YouTubePlayerState;
-    };
-    onYouTubeIframeAPIReady: () => void;
-  }
+interface ProgressBarEvent extends React.MouseEvent<HTMLDivElement> {
+  currentTarget: HTMLDivElement;
 }
 
 const Radio = () => {
@@ -142,9 +142,8 @@ const Radio = () => {
     }
   };
 
-  const formatTime = (time) => {
+  const formatTime = (time: number): string => {
     if (!time || isNaN(time)) return '--:--';
-
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes.toString().padStart(2, '0')}:${seconds
@@ -182,7 +181,7 @@ const Radio = () => {
   }, [state.playlist]);
 
   useEffect(() => {
-    if (state.isPlayerReady) {
+    if (state.isPlayerReady && playerRef.current) {
       playerRef.current.setVolume(state.volume);
     }
   }, [state.isPlayerReady, state.volume]);
@@ -213,7 +212,7 @@ const Radio = () => {
   };
 
   const loadYouTubeIframeAPI = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       if (window.YT) {
         resolve();
         return;
@@ -236,11 +235,13 @@ const Radio = () => {
       tag.src = 'https://www.youtube.com/iframe_api';
       tag.onerror = reject;
       const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      if (firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
     });
   };
 
-  const getErrorMessage = (errorCode) => {
+  const getErrorMessage = (errorCode: number): string => {
     switch (errorCode) {
       case 2:
         return 'Invalid video parameter';
@@ -292,7 +293,6 @@ const Radio = () => {
           origin: window.location.origin,
           playsinline: 1,
           rel: 0,
-          mute: 0,
           start: 0,
         },
         events: {
@@ -309,7 +309,7 @@ const Radio = () => {
             }
 
             // Store the player instance
-            playerRef.current = event.target;
+            playerRef.current = event.target as YouTubePlayer;
             onPlayerReady(event);
           },
           onError: handlePlayerError,
@@ -334,7 +334,7 @@ const Radio = () => {
     }
   };
 
-  const handlePlayerError = (event) => {
+  const handlePlayerError = (event: { target: YT.Player; data: number }) => {
     console.error('YouTube player error:', event.data);
     const errorMessage = getErrorMessage(event.data);
 
@@ -407,8 +407,16 @@ const Radio = () => {
       }
 
       const videoIds = data.items
-        .filter((item) => item?.snippet?.resourceId?.videoId)
-        .map((item) => item.snippet.resourceId.videoId);
+        .filter(
+          (
+            item: any,
+          ): item is { snippet: { resourceId: { videoId: string } } } =>
+            item?.snippet?.resourceId?.videoId != null,
+        )
+        .map(
+          (item: { snippet: { resourceId: { videoId: string } } }) =>
+            item.snippet.resourceId.videoId,
+        );
 
       console.log('Processed video IDs:', videoIds.length);
 
@@ -543,7 +551,7 @@ const Radio = () => {
     }
   };
 
-  const onPlayerReady = (event) => {
+  const onPlayerReady = (event: { target: YT.Player }) => {
     console.log('Player ready event fired');
 
     if (state.playlist[0]) {
@@ -653,13 +661,13 @@ const Radio = () => {
 
       // Load video
       if (playerRef.current) {
-        playerRef.current.loadVideoById(previousTrackId);
+        (playerRef.current as YouTubePlayer).loadVideoById(previousTrackId);
       } else {
         await initializePlayer();
         if (!playerRef.current) {
           throw new Error('Failed to reinitialize player');
         }
-        playerRef.current.loadVideoById(previousTrackId);
+        (playerRef.current as YouTubePlayer).loadVideoById(previousTrackId);
       }
 
       // Update the queue with the new current track
@@ -759,13 +767,13 @@ const Radio = () => {
 
         // Create the upcoming tracks list for UI
         const upcomingTracks: Track[] = nextThreeTracks
-          .map((id) => {
+          .map((id): Track | null => {
             const validTrack = allValidatedTracks.find((vt) => vt.id === id);
             if (!validTrack) return null;
             return {
               id: validTrack.id,
               title: validTrack.details.title,
-              albumCoverUrl: validTrack.details.albumCoverUrl || '',
+              albumCoverUrl: validTrack.details.albumCoverUrl,
             };
           })
           .filter((track): track is Track => track !== null)
@@ -859,13 +867,13 @@ const Radio = () => {
 
       // Load video
       if (playerRef.current) {
-        playerRef.current.loadVideoById(nextTrackId);
+        (playerRef.current as YouTubePlayer).loadVideoById(nextTrackId);
       } else {
         await initializePlayer();
         if (!playerRef.current) {
           throw new Error('Failed to reinitialize player');
         }
-        playerRef.current.loadVideoById(nextTrackId);
+        (playerRef.current as YouTubePlayer).loadVideoById(nextTrackId);
       }
 
       // Update the queue with the new current track
@@ -945,7 +953,7 @@ const Radio = () => {
     }
   };
 
-  const onPlayerStateChange = (event: { data: number }) => {
+  const onPlayerStateChange = (event: YouTubeEvent) => {
     console.log('Player state changed:', event.data);
 
     switch (event.data) {
@@ -1000,7 +1008,7 @@ const Radio = () => {
         console.log('Video cued');
         // If we have a cued video and we're supposed to be playing, start it
         if (state.isPlaying && playerRef.current) {
-          playerRef.current.playVideo();
+          (playerRef.current as YouTubePlayer).playVideo();
         }
         break;
 
@@ -1015,13 +1023,13 @@ const Radio = () => {
     }
 
     if (state.isPlaying) {
-      playerRef.current.pauseVideo();
+      (playerRef.current as YouTubePlayer).pauseVideo();
       setState((prevState) => ({
         ...prevState,
         isPlaying: false,
       }));
     } else {
-      playerRef.current.playVideo();
+      (playerRef.current as YouTubePlayer).playVideo();
       setState((prevState) => ({
         ...prevState,
         isPlaying: true,
@@ -1063,8 +1071,8 @@ const Radio = () => {
         }));
 
         // Ensure player is still available after state update
-        if (playerRef.current?.loadVideoById) {
-          playerRef.current.loadVideoById(videoId);
+        if ((playerRef.current as YouTubePlayer).loadVideoById) {
+          (playerRef.current as YouTubePlayer).loadVideoById(videoId);
         } else {
           throw new Error('Player not properly initialized');
         }
@@ -1091,23 +1099,66 @@ const Radio = () => {
   };
 
   useEffect(() => {
-    const marqueeContent = document.querySelector('.marquee-content');
-    const marquee = document.querySelector('.marquee');
+    const marqueeContent = document.querySelector(
+      '.marquee-content',
+    ) as HTMLElement;
+    const marquee = document.querySelector('.marquee') as HTMLElement;
     if (marqueeContent && marquee && state.videoDetails.title) {
       const contentWidth = marqueeContent.offsetWidth;
       const containerWidth = marquee.offsetWidth;
-      const duration = (contentWidth / containerWidth) * 5; // Adjust the multiplier to change speed
+      const duration = (contentWidth / containerWidth) * 5;
       marqueeContent.style.animationDuration = `${duration}s`;
     }
   }, [state.videoDetails.title]);
 
   // Add this function to check the title length
-  const isTitleShort = (title) => {
+  const isTitleShort = (title: string): boolean => {
     return (title || '').length <= 24;
   };
 
   const handleTrackSelect = async (trackId: string) => {
     await handleTrackTransition(trackId, false);
+  };
+
+  const handleStateChange = (event: YouTubeEvent) => {
+    // ... existing code ...
+  };
+
+  const handleError = (event: YouTubeEvent) => {
+    // ... existing code ...
+  };
+
+  const handleProgressBarClick = (event: ProgressBarEvent) => {
+    if (!playerRef.current || typeof state.duration === 'undefined') return;
+    const progressBar = event.currentTarget;
+    const clickPosition =
+      event.clientX - progressBar.getBoundingClientRect().left;
+    const progressBarWidth = progressBar.offsetWidth;
+    const seekTime = (clickPosition / progressBarWidth) * state.duration;
+    (playerRef.current as YouTubePlayer).seekTo(seekTime, true);
+  };
+
+  const handleTrackClick = (track: Track) => {
+    // ... existing code ...
+  };
+
+  const handleTrackDoubleClick = (track: Track) => {
+    // ... existing code ...
+  };
+
+  const validateTracks = async (tracks: Track[]): Promise<Track[]> => {
+    const validatedTracks: Track[] = [];
+    for (const track of tracks) {
+      const validatedTrack = await validateTrack(track.id);
+      if (validatedTrack) {
+        validatedTracks.push({
+          id: validatedTrack.id,
+          title: validatedTrack.details.title,
+          albumCoverUrl: validatedTrack.details.albumCoverUrl,
+        });
+      }
+    }
+    return validatedTracks;
   };
 
   return (

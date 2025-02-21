@@ -7,6 +7,7 @@ export interface Track {
 export interface PlaybackState {
   isPlaying: boolean;
   volume: number;
+  lastVolume: number;
   currentTime?: number;
   duration?: number;
   buffered?: number;
@@ -18,7 +19,9 @@ export interface PlayerState extends PlaybackState {
   currentTrackIndex: number;
   playlist: string[];
   videoDetails: {
+    artist: string;
     title: string;
+    localizedTitle: string;
   };
   albumCoverUrl: string;
   isContentVisible: boolean;
@@ -37,4 +40,22 @@ export interface PlayerState extends PlaybackState {
     imageLoaded: boolean;
   };
   upcomingTracks: Track[];
+  validatedTracks: ValidatedTrack[];
+  playbackQueue: {
+    currentTrack: string | null;
+    upcomingTracks: string[];
+    validatedTracks: ValidatedTrack[];
+    playedTracks: string[];
+  };
+}
+
+export interface ValidatedTrack {
+  id: string;
+  details: {
+    artist: string;
+    title: string;
+    localizedTitle: string;
+    albumCoverUrl: string;
+  };
+  isValid: boolean;
 }
