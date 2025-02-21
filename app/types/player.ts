@@ -1,27 +1,14 @@
 export interface YouTubePlayer {
   destroy: () => void;
-  loadVideoById: (videoId: string) => void;
+  loadVideoById: (videoId: string, startSeconds?: number) => void;
   playVideo: () => void;
   pauseVideo: () => void;
   setVolume: (volume: number) => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   getPlayerState: () => number;
-  getCurrentTime: () => number;
   getDuration: () => number;
+  getCurrentTime: () => number;
   getVideoLoadedFraction: () => number;
-}
-
-export enum PlayerState {
-  UNSTARTED = -1,
-  ENDED = 0,
-  PLAYING = 1,
-  PAUSED = 2,
-  BUFFERING = 3,
-  CUED = 5,
-}
-
-export interface PlayerError {
-  code: number;
-  message: string;
 }
 
 export interface PlayerConfig {
@@ -42,8 +29,24 @@ export interface PlayerConfig {
     start: number;
   };
   events: {
-    onReady: (event: any) => void;
-    onError: (event: any) => void;
-    onStateChange: (event: any) => void;
+    onReady: (event: { target: YouTubePlayer }) => void;
+    onError: (event: { target: YouTubePlayer; data: number }) => void;
+    onStateChange: (event: { target: YouTubePlayer; data: number }) => void;
   };
+}
+
+export const PlayerState = {
+  UNSTARTED: -1,
+  ENDED: 0,
+  PLAYING: 1,
+  PAUSED: 2,
+  BUFFERING: 3,
+  CUED: 5,
+} as const;
+
+export type PlayerStateType = (typeof PlayerState)[keyof typeof PlayerState];
+
+export interface PlayerError {
+  code: number;
+  message: string;
 }

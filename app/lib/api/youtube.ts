@@ -1,4 +1,9 @@
 import { shuffle } from 'lodash';
+import {
+  YouTubeVideoItem,
+  YouTubePlaylistItem,
+  YouTubeApiResponse,
+} from '@/app/types/youtube';
 
 const API_KEY = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
 
@@ -34,12 +39,12 @@ const processBatch = async (
   const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${idsString}&key=${API_KEY}`;
 
   const response = await fetch(url);
-  const data = await response.json();
+  const data = (await response.json()) as YouTubeApiResponse<YouTubeVideoItem>;
 
   const results = new Map<string, VideoDetails>();
 
   if (data.items) {
-    data.items.forEach((item: any) => {
+    data.items.forEach((item) => {
       const snippet = item.snippet;
       const fullTitle = cleanTitle(snippet?.title || '');
       const [artist, ...titleParts] = fullTitle.split(' - ');
@@ -49,7 +54,9 @@ const processBatch = async (
         title,
         artist,
         thumbnailUrl:
-          snippet?.thumbnails?.maxres?.url || snippet?.thumbnails?.high?.url,
+          snippet?.thumbnails?.maxres?.url ||
+          snippet?.thumbnails?.high?.url ||
+          '',
         localizedTitle: cleanTitle(snippet?.localized?.title || fullTitle),
       };
 
@@ -115,15 +122,16 @@ export async function fetchPlaylistItems(
     );
   }
 
-  const data = await response.json();
+  const data =
+    (await response.json()) as YouTubeApiResponse<YouTubePlaylistItem>;
 
   if (!data || !data.items || !Array.isArray(data.items)) {
     throw new Error('Invalid playlist data received.');
   }
 
   const videoIds = data.items
-    .filter((item: any) => item?.snippet?.resourceId?.videoId)
-    .map((item: any) => item.snippet.resourceId.videoId);
+    .filter((item) => item?.snippet?.resourceId?.videoId)
+    .map((item) => item.snippet.resourceId.videoId);
 
   if (videoIds.length === 0) {
     throw new Error('No videos found in playlist.');

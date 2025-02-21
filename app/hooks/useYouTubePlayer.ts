@@ -7,6 +7,18 @@ interface UseYouTubePlayerProps {
   onError?: (error: string) => void;
 }
 
+declare global {
+  interface Window {
+    YT: {
+      Player: {
+        new (elementId: string, config: PlayerConfig): YouTubePlayer;
+      };
+      PlayerState: typeof PlayerState;
+    };
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
 export function useYouTubePlayer({
   playlistId,
   onError,
@@ -118,13 +130,19 @@ export function useYouTubePlayer({
         start: 0,
       },
       events: {
-        onReady: handlePlayerReady,
-        onError: handlePlayerError,
-        onStateChange: handlePlayerStateChange,
+        onReady: (event: { target: YouTubePlayer }) => handlePlayerReady(),
+        onError: (event: { target: YouTubePlayer; data: number }) =>
+          handlePlayerError(event),
+        onStateChange: (event: { target: YouTubePlayer; data: number }) =>
+          handlePlayerStateChange(event),
       },
     };
 
-    playerRef.current = new window.YT.Player('radio-player', config);
+    const player = new window.YT.Player(
+      'radio-player',
+      config,
+    ) as YouTubePlayer;
+    playerRef.current = player;
   };
 
   const handlePlayerReady = async () => {

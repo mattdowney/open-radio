@@ -5,90 +5,75 @@ import Script from 'next/script';
 import { shuffle } from 'lodash';
 import Loading from './components/ui/Loading';
 import LeftPanel from './components/layout/LeftPanel';
-import { Track, PlayerState, ValidatedTrack } from './types/track';
+import { Track, ValidatedTrack, TrackDetails } from './types/track';
+import {
+  YouTubePlayer,
+  PlayerConfig,
+  PlayerState,
+  PlayerStateType,
+} from './types/player';
+import { YouTubePlaylistItem, YouTubeApiResponse } from './types/youtube';
 import { cn } from './lib/utils';
-
-declare namespace YT {
-  class Player {
-    constructor(elementId: string, options: PlayerOptions);
-    destroy(): void;
-    loadVideoById(videoId: string, startSeconds?: number): void;
-    playVideo(): void;
-    pauseVideo(): void;
-    setVolume(volume: number): void;
-    seekTo(seconds: number, allowSeekAhead: boolean): void;
-    getPlayerState(): number;
-    getDuration(): number;
-    getCurrentTime(): number;
-  }
-
-  interface PlayerOptions {
-    height?: string | number;
-    width?: string | number;
-    videoId?: string;
-    playerVars?: {
-      autoplay?: 0 | 1;
-      controls?: 0 | 1;
-      disablekb?: 0 | 1;
-      enablejsapi?: 0 | 1;
-      fs?: 0 | 1;
-      modestbranding?: 0 | 1;
-      playsinline?: 0 | 1;
-      rel?: 0 | 1;
-      origin?: string;
-      start?: number;
-    };
-    events?: {
-      onReady?: (event: { target: Player }) => void;
-      onStateChange?: (event: { target: Player; data: number }) => void;
-      onError?: (event: { target: Player; data: number }) => void;
-    };
-  }
-
-  enum PlayerState {
-    UNSTARTED = -1,
-    ENDED = 0,
-    PLAYING = 1,
-    PAUSED = 2,
-    BUFFERING = 3,
-    CUED = 5,
-  }
-}
 
 declare global {
   interface Window {
-    YT: typeof YT;
+    YT: {
+      Player: {
+        new (elementId: string, config: PlayerConfig): YouTubePlayer;
+      };
+      PlayerState: typeof PlayerState;
+    };
     onYouTubeIframeAPIReady: () => void;
   }
 }
 
-interface YouTubePlayer extends YT.Player {
-  loadVideoById(videoId: string, startSeconds?: number): void;
-  playVideo(): void;
-  pauseVideo(): void;
-  setVolume(volume: number): void;
-  seekTo(seconds: number, allowSeekAhead: boolean): void;
-  getPlayerState(): number;
-  getDuration(): number;
-  getCurrentTime(): number;
-}
-
-interface YouTubePlayerState {
-  UNSTARTED: -1;
-  ENDED: 0;
-  PLAYING: 1;
-  PAUSED: 2;
-  BUFFERING: 3;
-  CUED: 5;
-}
-
 interface YouTubeEvent {
   target: YouTubePlayer;
-  data: number;
+  data: PlayerStateType;
 }
 
 interface ProgressBarEvent extends React.MouseEvent<HTMLDivElement> {
   currentTarget: HTMLDivElement;
+}
+
+interface AppState {
+  isPlaying: boolean;
+  isPlayerReady: boolean;
+  isLoadingNext: boolean;
+  currentTrackIndex: number;
+  playlist: string[];
+  videoDetails: {
+    artist: string;
+    title: string;
+    localizedTitle: string;
+  };
+  albumCoverUrl: string;
+  volume: number;
+  lastVolume: number;
+  isContentVisible: boolean;
+  imageLoaded: boolean;
+  isInitialLoad: boolean;
+  isTrackLoaded: boolean;
+  hasUserInteracted: boolean;
+  isInitialPlay: boolean;
+  playedSongs: string[];
+  isTransitioning: boolean;
+  isUIReady: boolean;
+  error?: string;
+  duration?: number;
+  nextTrack: {
+    videoId: string | null;
+    details: TrackDetails | null;
+    imageLoaded: boolean;
+  };
+  upcomingTracks: Track[];
+  validatedTracks: ValidatedTrack[];
+  playbackQueue: {
+    currentTrack: string | null;
+    upcomingTracks: string[];
+    validatedTracks: ValidatedTrack[];
+    playedTracks: string[];
+  };
 }
 
 const Radio = () => {
@@ -96,7 +81,7 @@ const Radio = () => {
   const playlistId = 'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
   const playerRef = useRef<YouTubePlayer | null>(null);
 
-  const [state, setState] = useState<PlayerState>({
+  const [state, setState] = useState<AppState>({
     isPlaying: false,
     isPlayerReady: false,
     isLoadingNext: false,
@@ -293,11 +278,11 @@ const Radio = () => {
           origin: window.location.origin,
           playsinline: 1,
           rel: 0,
+          mute: 0,
           start: 0,
         },
         events: {
           onReady: (event) => {
-            // Ensure the player instance has all required methods
             if (typeof event.target.loadVideoById !== 'function') {
               console.error('Player missing required methods');
               setState((prevState) => ({
@@ -307,13 +292,11 @@ const Radio = () => {
               }));
               return;
             }
-
-            // Store the player instance
             playerRef.current = event.target as YouTubePlayer;
-            onPlayerReady(event);
+            onPlayerReady(event as { target: YouTubePlayer });
           },
           onError: handlePlayerError,
-          onStateChange: onPlayerStateChange,
+          onStateChange: handlePlayerStateChange,
         },
       });
 
@@ -334,14 +317,22 @@ const Radio = () => {
     }
   };
 
-  const handlePlayerError = (event: { target: YT.Player; data: number }) => {
-    console.error('YouTube player error:', event.data);
-    const errorMessage = getErrorMessage(event.data);
+  const handlePlayerError = (event: { data: number }) => {
+    const errorMessages = {
+      2: 'Invalid video parameter',
+      5: 'Network error occurred',
+      100: 'Video not available',
+      101: 'Video playback not allowed',
+      150: 'Video playback not allowed',
+    };
+
+    const message =
+      errorMessages[event.data as keyof typeof errorMessages] ||
+      'Error loading video player';
 
     // If it's a video-specific error, try playing the next track
     if ([100, 101, 150].includes(event.data)) {
-      console.log('Video-specific error, attempting to play next track');
-      setState((prevState) => ({
+      setState((prevState: AppState) => ({
         ...prevState,
         playlist: prevState.playlist.filter(
           (id) => id !== prevState.playlist[prevState.currentTrackIndex],
@@ -352,9 +343,9 @@ const Radio = () => {
     }
 
     // For other errors, show the error message
-    setState((prevState) => ({
+    setState((prevState: AppState) => ({
       ...prevState,
-      error: errorMessage,
+      error: message,
       isInitialLoad: false,
     }));
   };
@@ -364,7 +355,7 @@ const Radio = () => {
       console.log('Starting playlist fetch');
       if (!apiKey) {
         console.error('YouTube API key is missing');
-        setState((prevState) => ({
+        setState((prevState: AppState) => ({
           ...prevState,
           error: 'YouTube API key is not configured.',
           isInitialLoad: false,
@@ -382,7 +373,7 @@ const Radio = () => {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('YouTube API Error:', errorData);
-        setState((prevState) => ({
+        setState((prevState: AppState) => ({
           ...prevState,
           error: `API Error: ${errorData.error?.message || 'Unknown error'}`,
           isInitialLoad: false,
@@ -551,7 +542,7 @@ const Radio = () => {
     }
   };
 
-  const onPlayerReady = (event: { target: YT.Player }) => {
+  const onPlayerReady = (event: { target: YouTubePlayer }) => {
     console.log('Player ready event fired');
 
     if (state.playlist[0]) {
@@ -953,25 +944,24 @@ const Radio = () => {
     }
   };
 
-  const onPlayerStateChange = (event: YouTubeEvent) => {
+  const handlePlayerStateChange = (event: {
+    target: YouTubePlayer;
+    data: number;
+  }) => {
     console.log('Player state changed:', event.data);
 
     switch (event.data) {
-      case window.YT.PlayerState.UNSTARTED: // -1
-        console.log('Video unstarted - waiting for user interaction');
-        setState((prevState) => ({
+      case PlayerState.UNSTARTED:
+        setState((prevState: AppState) => ({
           ...prevState,
           isPlaying: false,
         }));
         break;
 
-      case window.YT.PlayerState.ENDED: // 0
-        console.log('Track ended, playing next');
-        // Ensure we're not already transitioning
+      case PlayerState.ENDED:
         if (!state.isTransitioning) {
           playNext(true).catch((error) => {
-            console.error('Error auto-advancing to next track:', error);
-            setState((prevState) => ({
+            setState((prevState: AppState) => ({
               ...prevState,
               error: 'Failed to auto-advance to next track',
             }));
@@ -979,9 +969,8 @@ const Radio = () => {
         }
         break;
 
-      case window.YT.PlayerState.PLAYING: // 1
-        console.log('Video started playing');
-        setState((prevState) => ({
+      case PlayerState.PLAYING:
+        setState((prevState: AppState) => ({
           ...prevState,
           isPlaying: true,
           isLoadingNext: false,
@@ -989,26 +978,21 @@ const Radio = () => {
         }));
         break;
 
-      case window.YT.PlayerState.PAUSED: // 2
-        console.log('Video paused');
-        // Only update state if we're not transitioning
+      case PlayerState.PAUSED:
         if (!state.isTransitioning) {
-          setState((prevState) => ({
+          setState((prevState: AppState) => ({
             ...prevState,
             isPlaying: false,
           }));
         }
         break;
 
-      case window.YT.PlayerState.BUFFERING: // 3
-        console.log('Video buffering');
+      case PlayerState.BUFFERING:
         break;
 
-      case window.YT.PlayerState.CUED: // 5
-        console.log('Video cued');
-        // If we have a cued video and we're supposed to be playing, start it
+      case PlayerState.CUED:
         if (state.isPlaying && playerRef.current) {
-          (playerRef.current as YouTubePlayer).playVideo();
+          playerRef.current.playVideo();
         }
         break;
 

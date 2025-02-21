@@ -13,6 +13,13 @@ export interface PlaybackState {
   buffered?: number;
 }
 
+export interface TrackDetails {
+  artist: string;
+  title: string;
+  localizedTitle: string;
+  albumCoverUrl: string;
+}
+
 export interface PlayerState extends PlaybackState {
   isPlayerReady: boolean;
   isLoadingNext: boolean;
@@ -36,7 +43,7 @@ export interface PlayerState extends PlaybackState {
   error?: string;
   nextTrack: {
     videoId: string | null;
-    details: any | null;
+    details: TrackDetails | null;
     imageLoaded: boolean;
   };
   upcomingTracks: Track[];
@@ -51,11 +58,6 @@ export interface PlayerState extends PlaybackState {
 
 export interface ValidatedTrack {
   id: string;
-  details: {
-    artist: string;
-    title: string;
-    localizedTitle: string;
-    albumCoverUrl: string;
-  };
+  details: TrackDetails;
   isValid: boolean;
 }
