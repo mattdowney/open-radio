@@ -711,17 +711,38 @@ const Radio = () => {
 
     const playlistLength = state.playlist.length;
 
-    // Calculate the next tracks starting from the given index
-    const remainingTracks = state.playlist
-      .slice(startIndex + 1)
-      .concat(state.playlist.slice(0, startIndex))
-      .filter((id) => id !== currentTrackId);
+    // Create a circular array by concatenating the playlist with itself
+    const circularPlaylist: string[] = [...state.playlist, ...state.playlist];
 
-    // Take exactly 3 tracks for the upcoming queue
-    const nextThreeTracks = remainingTracks.slice(0, 3);
+    // Start from the current index and get the next unique tracks
+    const startPosition = startIndex + 1;
+    const uniqueNextTracks: string[] = [];
+    let position = startPosition;
+
+    // Keep adding tracks until we have exactly 3 unique tracks
+    while (uniqueNextTracks.length < 3 && position < circularPlaylist.length) {
+      const trackId = circularPlaylist[position];
+      // Only add if it's not the current track and not already in our upcoming list
+      if (trackId !== currentTrackId && !uniqueNextTracks.includes(trackId)) {
+        uniqueNextTracks.push(trackId);
+      }
+      position++;
+    }
+
+    // Ensure we always have exactly 3 tracks by wrapping around if necessary
+    if (uniqueNextTracks.length < 3) {
+      position = 0;
+      while (uniqueNextTracks.length < 3 && position < startPosition) {
+        const trackId = state.playlist[position];
+        if (trackId !== currentTrackId && !uniqueNextTracks.includes(trackId)) {
+          uniqueNextTracks.push(trackId);
+        }
+        position++;
+      }
+    }
 
     // Filter out tracks that need validation
-    const tracksToValidate = nextThreeTracks.filter(
+    const tracksToValidate = uniqueNextTracks.filter(
       (trackId) =>
         !state.playbackQueue.validatedTracks.some((vt) => vt.id === trackId),
     );
@@ -745,7 +766,7 @@ const Radio = () => {
         // Get existing validated tracks that are still relevant
         const existingValidTracks =
           prevState.playbackQueue.validatedTracks.filter((vt) =>
-            nextThreeTracks.includes(vt.id),
+            uniqueNextTracks.includes(vt.id),
           );
 
         // Combine validated tracks, ensuring no duplicates
@@ -756,8 +777,8 @@ const Radio = () => {
           (vt, index, self) => index === self.findIndex((t) => t.id === vt.id),
         );
 
-        // Create the upcoming tracks list for UI
-        const upcomingTracks: Track[] = nextThreeTracks
+        // Create the upcoming tracks list for UI, ensuring exactly 3 tracks
+        const upcomingTracks: Track[] = uniqueNextTracks
           .map((id): Track | null => {
             const validTrack = allValidatedTracks.find((vt) => vt.id === id);
             if (!validTrack) return null;
@@ -767,15 +788,14 @@ const Radio = () => {
               albumCoverUrl: validTrack.details.albumCoverUrl,
             };
           })
-          .filter((track): track is Track => track !== null)
-          .slice(0, 3);
+          .filter((track): track is Track => track !== null);
 
         return {
           ...prevState,
           playbackQueue: {
             ...prevState.playbackQueue,
             currentTrack: currentTrackId,
-            upcomingTracks: nextThreeTracks,
+            upcomingTracks: uniqueNextTracks,
             validatedTracks: allValidatedTracks,
           },
           upcomingTracks,
