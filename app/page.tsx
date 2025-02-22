@@ -710,12 +710,15 @@ const Radio = () => {
     currentTrackId: string,
     startIndex: number,
   ) => {
+    console.log('Updating playback queue for track:', currentTrackId);
     if (!state.playlist.length) return;
-
-    const playlistLength = state.playlist.length;
 
     // Create a circular array by concatenating the playlist with itself
     const circularPlaylist: string[] = [...state.playlist, ...state.playlist];
+    console.log(
+      'Created circular playlist with length:',
+      circularPlaylist.length,
+    );
 
     // Start from the current index and get the next unique tracks
     const startPosition = startIndex + 1;
@@ -724,45 +727,45 @@ const Radio = () => {
 
     // Keep adding tracks until we have exactly 3 unique tracks
     while (uniqueNextTracks.length < 3 && position < circularPlaylist.length) {
-      const trackId = circularPlaylist[position];
+      const trackId = circularPlaylist[position % circularPlaylist.length];
       // Only add if it's not the current track and not already in our upcoming list
       if (trackId !== currentTrackId && !uniqueNextTracks.includes(trackId)) {
+        console.log('Adding track to upcoming:', trackId);
         uniqueNextTracks.push(trackId);
       }
       position++;
     }
 
-    // Ensure we always have exactly 3 tracks by wrapping around if necessary
+    // If we still need more tracks, wrap around to the beginning
     if (uniqueNextTracks.length < 3) {
+      console.log('Wrapping around playlist to fill upcoming tracks');
       position = 0;
       while (uniqueNextTracks.length < 3 && position < startPosition) {
         const trackId = state.playlist[position];
         if (trackId !== currentTrackId && !uniqueNextTracks.includes(trackId)) {
+          console.log('Adding wrapped track to upcoming:', trackId);
           uniqueNextTracks.push(trackId);
         }
         position++;
       }
     }
 
-    // Filter out tracks that need validation
-    const tracksToValidate = uniqueNextTracks.filter(
-      (trackId) =>
-        !state.playbackQueue.validatedTracks.some((vt) => vt.id === trackId),
-    );
+    console.log('Final upcoming tracks:', uniqueNextTracks);
 
     try {
       // Validate new tracks
-      const newValidatedTracks: ValidatedTrack[] = [];
-      for (const trackId of tracksToValidate) {
-        try {
-          const validation = await validateTrack(trackId);
-          if (validation) {
-            newValidatedTracks.push(validation);
-          }
-        } catch (error) {
-          console.error(`Failed to validate track ${trackId}:`, error);
+      const validationPromises = uniqueNextTracks.map(async (trackId) => {
+        if (
+          state.playbackQueue.validatedTracks.some((vt) => vt.id === trackId)
+        ) {
+          return null; // Skip already validated tracks
         }
-      }
+        return validateTrack(trackId);
+      });
+
+      const newValidatedTracks = (await Promise.all(validationPromises)).filter(
+        (track): track is ValidatedTrack => track !== null,
+      );
 
       // Update state with new tracks
       setState((prevState) => {
@@ -780,7 +783,7 @@ const Radio = () => {
           (vt, index, self) => index === self.findIndex((t) => t.id === vt.id),
         );
 
-        // Create the upcoming tracks list for UI, ensuring exactly 3 tracks
+        // Create the upcoming tracks list for UI
         const upcomingTracks: Track[] = uniqueNextTracks
           .map((id): Track | null => {
             const validTrack = allValidatedTracks.find((vt) => vt.id === id);
@@ -792,6 +795,8 @@ const Radio = () => {
             };
           })
           .filter((track): track is Track => track !== null);
+
+        console.log('Updating state with new upcoming tracks:', upcomingTracks);
 
         return {
           ...prevState,
@@ -817,6 +822,10 @@ const Radio = () => {
       console.log('Track transition already in progress, skipping');
       return;
     }
+
+    console.log(
+      `Starting track transition to ${nextTrackId}. Auto advance: ${autoAdvance}`,
+    );
 
     setState((prevState) => ({
       ...prevState,
@@ -847,31 +856,44 @@ const Radio = () => {
         throw new Error('Track not found in playlist');
       }
 
-      // Update state with new track
-      setState((prevState) => ({
-        ...prevState,
-        currentTrackIndex: newIndex,
-        videoDetails: {
-          artist: details.artist,
-          title: details.title,
-          localizedTitle: details.localizedTitle,
-        },
-        albumCoverUrl: details.albumCoverUrl,
-        playbackQueue: {
-          ...prevState.playbackQueue,
-          currentTrack: nextTrackId,
-          playedTracks: [
-            ...prevState.playbackQueue.playedTracks,
-            prevState.playlist[prevState.currentTrackIndex],
-          ],
-        },
-        isContentVisible: true,
-      }));
+      // Update state with new track and queue
+      setState((prevState) => {
+        const currentTrackId = prevState.playlist[prevState.currentTrackIndex];
+        const updatedPlayedTracks = currentTrackId
+          ? [...prevState.playbackQueue.playedTracks, currentTrackId]
+          : prevState.playbackQueue.playedTracks;
+
+        // Remove the next track from upcoming tracks
+        const remainingUpcomingTracks =
+          prevState.playbackQueue.upcomingTracks.filter(
+            (id) => id !== nextTrackId,
+          );
+
+        return {
+          ...prevState,
+          currentTrackIndex: newIndex,
+          videoDetails: {
+            artist: details.artist,
+            title: details.title,
+            localizedTitle: details.localizedTitle,
+          },
+          albumCoverUrl: details.albumCoverUrl,
+          playbackQueue: {
+            ...prevState.playbackQueue,
+            currentTrack: nextTrackId,
+            upcomingTracks: remainingUpcomingTracks,
+            playedTracks: updatedPlayedTracks,
+          },
+          isContentVisible: true,
+        };
+      });
 
       // Load video
       if (playerRef.current) {
+        console.log('Loading video:', nextTrackId);
         (playerRef.current as YouTubePlayer).loadVideoById(nextTrackId);
       } else {
+        console.log('Player not found, reinitializing...');
         await initializePlayer();
         if (!playerRef.current) {
           throw new Error('Failed to reinitialize player');
@@ -892,21 +914,34 @@ const Radio = () => {
         imageLoaded: true,
         isPlaying: true,
       }));
+
+      console.log('Track transition completed successfully');
     } catch (error) {
       console.error('Error during track transition:', error);
-      if (autoAdvance && state.playlist.length > 1) {
-        setState((prevState) => ({
-          ...prevState,
-          playlist: prevState.playlist.filter((id) => id !== nextTrackId),
-          isLoadingNext: false,
-          isTransitioning: false,
-        }));
-        return playNext(true);
-      }
+
+      // Always reset transition state
       setState((prevState) => ({
         ...prevState,
         isLoadingNext: false,
         isTransitioning: false,
+      }));
+
+      // If auto-advancing and we have more tracks, try the next one
+      if (autoAdvance && state.playlist.length > 1) {
+        console.log('Auto-advance failed, removing track and trying next');
+        setState((prevState) => ({
+          ...prevState,
+          playlist: prevState.playlist.filter((id) => id !== nextTrackId),
+        }));
+
+        // Small delay to ensure state is updated
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return playNext(true);
+      }
+
+      // If not auto-advancing or no more tracks, show error
+      setState((prevState) => ({
+        ...prevState,
         error: error instanceof Error ? error.message : 'Failed to load track',
       }));
     }
@@ -957,59 +992,68 @@ const Radio = () => {
     }
   };
 
-  const handlePlayerStateChange = (event: {
+  const handlePlayerStateChange = async (event: {
     target: YouTubePlayer;
     data: number;
   }) => {
-    console.log('Player state changed:', event.data);
+    const playerState = event.data;
+    console.log('Player state changed to:', playerState);
 
-    switch (event.data) {
-      case PlayerState.UNSTARTED:
-        setState((prevState: AppState) => ({
+    switch (playerState) {
+      case PlayerState.ENDED:
+        console.log('Track ended, checking for next track');
+        if (state.isTransitioning) {
+          console.log('Skipping auto-advance - transition already in progress');
+          return;
+        }
+
+        // Get the next track from the queue
+        const nextTrackId = state.playbackQueue.upcomingTracks[0];
+        if (nextTrackId) {
+          console.log('Auto-advancing to next track:', nextTrackId);
+          try {
+            await handleTrackTransition(nextTrackId);
+          } catch (error) {
+            console.error('Failed to auto-advance to queued track:', error);
+            // Fallback to playlist-based auto-advance
+            await playNext(true);
+          }
+        } else {
+          console.log(
+            'No upcoming track in queue, using playlist-based auto-advance',
+          );
+          await playNext(true);
+        }
+        break;
+
+      case PlayerState.PLAYING:
+        console.log('Track started playing');
+        setState((prevState) => ({
+          ...prevState,
+          isPlaying: true,
+          error: undefined,
+        }));
+        break;
+
+      case PlayerState.PAUSED:
+        console.log('Track paused');
+        setState((prevState) => ({
           ...prevState,
           isPlaying: false,
         }));
         break;
 
-      case PlayerState.ENDED:
-        if (!state.isTransitioning) {
-          playNext(true).catch((error) => {
-            setState((prevState: AppState) => ({
-              ...prevState,
-              error: 'Failed to auto-advance to next track',
-            }));
-          });
-        }
-        break;
-
-      case PlayerState.PLAYING:
-        setState((prevState: AppState) => ({
-          ...prevState,
-          isPlaying: true,
-          isLoadingNext: false,
-          isInitialLoad: false,
-        }));
-        break;
-
-      case PlayerState.PAUSED:
-        if (!state.isTransitioning) {
-          setState((prevState: AppState) => ({
-            ...prevState,
-            isPlaying: false,
-          }));
-        }
-        break;
-
       case PlayerState.BUFFERING:
+        // Don't update state during buffering to avoid flickering
+        console.log('Track buffering');
         break;
 
-      case PlayerState.CUED:
-        if (state.isPlaying && playerRef.current) {
-          playerRef.current.playVideo();
-        }
+      case PlayerState.UNSTARTED:
+        console.log('Player unstarted');
         break;
 
       default:
+        console.log('Unhandled player state:', playerState);
         break;
     }
   };
