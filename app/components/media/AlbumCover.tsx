@@ -75,7 +75,7 @@ export function AlbumCover({
     <div
       className={cn(
         'relative aspect-square w-full bg-black overflow-hidden',
-        size === 'lg' ? 'rounded-lg' : 'rounded-md',
+        size === 'lg' ? 'rounded-xl' : 'rounded-md',
         className,
       )}
       style={{
