@@ -68,6 +68,7 @@ function LoadingSpinner() {
 const LISTENER_COUNT_STORAGE_KEY = 'radio_listener_count';
 const LISTENER_COUNT_TIMESTAMP_KEY = 'radio_listener_count_timestamp';
 const FIRST_TAB_KEY = 'radio_first_tab';
+const REGISTRATION_LOCK_KEY = 'radio_registration_lock';
 
 export function ListenerCount({ className }: ListenerCountProps) {
   const [listenerCount, setListenerCount] = useState<number | null>(null);
@@ -80,6 +81,38 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const textRef = useRef<HTMLSpanElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstTabRef = useRef<boolean>(false);
+  const maxLoadingTimeRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Acquire a registration lock to prevent multiple tabs from registering simultaneously
+  const acquireRegistrationLock = () => {
+    try {
+      const lockValue = localStorage.getItem(REGISTRATION_LOCK_KEY);
+      if (lockValue) {
+        const lockTime = parseInt(lockValue, 10);
+        const now = Date.now();
+        // If lock is less than 5 seconds old, it's still valid
+        if (!isNaN(lockTime) && now - lockTime < 5000) {
+          return false;
+        }
+      }
+      
+      // Set lock with current timestamp
+      localStorage.setItem(REGISTRATION_LOCK_KEY, Date.now().toString());
+      return true;
+    } catch (e) {
+      // If localStorage fails, assume we can proceed
+      return true;
+    }
+  };
+  
+  // Release the registration lock
+  const releaseRegistrationLock = () => {
+    try {
+      localStorage.removeItem(REGISTRATION_LOCK_KEY);
+    } catch (e) {
+      // Ignore errors
+    }
+  };
   
   // Save the count to localStorage when it changes
   const persistCountToStorage = (count: number) => {
@@ -160,6 +193,11 @@ export function ListenerCount({ className }: ListenerCountProps) {
       } else if (e.key === FIRST_TAB_KEY && e.newValue === null) {
         // Try to become the new first tab if the previous one was closed
         checkIfFirstTab();
+      } else if (e.key === REGISTRATION_LOCK_KEY && e.newValue === null) {
+        // Try to register if the lock is released
+        if (!registrationRef.current && isLoading) {
+          initializeListenerTracking();
+        }
       }
     };
     
@@ -179,8 +217,120 @@ export function ListenerCount({ className }: ListenerCountProps) {
           // Ignore errors during cleanup
         }
       }
+      
+      // Always release the lock if we held it
+      releaseRegistrationLock();
     };
   }, []);
+  
+  // Handle the registration and Firebase setup
+  const initializeListenerTracking = () => {
+    // Prevent multiple initializations
+    if (registrationRef.current) return;
+    
+    // Try to acquire the registration lock
+    const canRegister = acquireRegistrationLock();
+    
+    // If we can't acquire the lock, rely on localStorage updates instead
+    if (!canRegister) {
+      console.log('Another tab is currently registering, waiting for updates from localStorage');
+      checkForStorageUpdates();
+      return;
+    }
+    
+    try {
+      // Register this client as a listener
+      trackListener();
+      
+      // Mark as registered to prevent duplicate registrations
+      registrationRef.current = true;
+      
+      // Subscribe to real-time listener count updates
+      const unsubscribe = getListenerCount((count) => {
+        callbackExecutedRef.current = true;
+        
+        // If this is the first time we're getting data
+        if (currentCountRef.current === null) {
+          // First-tab correction: If we're the first tab and count is 2, it's likely a Firebase quirk
+          if (isFirstTabRef.current && count === 2) {
+            console.log('First tab detected with count 2, correcting to 1');
+            count = 1;
+          }
+          
+          // Set count and persist to storage
+          updateListenerCount(count);
+          
+          // After a brief delay, stop loading and expand the badge
+          setTimeout(() => {
+            setIsLoading(false);
+            
+            // Short delay after loading stops before expanding
+            setTimeout(() => {
+              setIsExpanded(true);
+            }, 50);
+            
+            // Release the lock now that we're done loading
+            releaseRegistrationLock();
+          }, 500);
+        } else if (count !== currentCountRef.current) {
+          // Just update the count - badge width will adjust automatically
+          updateListenerCount(count);
+        }
+        
+        // Keep the Firebase debug test for edge cases where count is 0
+        if (count === 0 && window.__firebaseDebug?.testListenerEvent) {
+          window.__firebaseDebug.testListenerEvent();
+        }
+      });
+      
+      // Store unsubscribe function for cleanup
+      unsubscribeRef.current = unsubscribe;
+      
+      // Fallback check if Firebase callback doesn't execute
+      setTimeout(() => {
+        if (!callbackExecutedRef.current) {
+          if (window.__firebaseDebug?.checkActiveCount) {
+            window.__firebaseDebug.checkActiveCount()
+              .then(count => {
+                // First-tab correction for fallback too
+                if (isFirstTabRef.current && count === 2) {
+                  count = 1;
+                }
+                
+                // Set count first (use fetched count or default to 1)
+                updateListenerCount(count > 0 ? count : 1);
+                
+                // Stop loading and expand the badge
+                setIsLoading(false);
+                setTimeout(() => setIsExpanded(true), 50);
+                
+                // Release the lock
+                releaseRegistrationLock();
+              })
+              .catch(() => {
+                // Handle error case
+                updateListenerCount(1);
+                setIsLoading(false);
+                setTimeout(() => setIsExpanded(true), 50);
+                releaseRegistrationLock();
+              });
+          } else {
+            // If debug tools not available, just use default value
+            updateListenerCount(1);
+            setIsLoading(false);
+            setTimeout(() => setIsExpanded(true), 50);
+            releaseRegistrationLock();
+          }
+        }
+      }, 2000);
+    } catch (error) {
+      console.error('Error setting up listener tracking:', error);
+      updateListenerCount(1);
+      setIsLoading(false);
+      setTimeout(() => setIsExpanded(true), 50);
+      releaseRegistrationLock();
+    }
+  };
   
   // Force update from Firebase every 10 seconds as a fallback
   useEffect(() => {
@@ -223,97 +373,28 @@ export function ListenerCount({ className }: ListenerCountProps) {
     // Try to get initial count from localStorage while loading
     checkForStorageUpdates();
     
-    // Only register once per mount
-    if (!registrationRef.current) {
-      try {
-        // Register this client as a listener
-        trackListener();
-        
-        // Mark as registered to prevent duplicate registrations
-        registrationRef.current = true;
-        
-        // Subscribe to real-time listener count updates
-        const unsubscribe = getListenerCount((count) => {
-          callbackExecutedRef.current = true;
-          
-          // If this is the first time we're getting data
-          if (currentCountRef.current === null) {
-            // First-tab correction: If we're the first tab and count is 2, it's likely a Firebase quirk
-            if (isFirstTabRef.current && count === 2) {
-              console.log('First tab detected with count 2, correcting to 1');
-              count = 1;
-            }
-            
-            // Set count and persist to storage
-            updateListenerCount(count);
-            
-            // After a brief delay, stop loading and expand the badge
-            setTimeout(() => {
-              setIsLoading(false);
-              
-              // Short delay after loading stops before expanding
-              setTimeout(() => {
-                setIsExpanded(true);
-              }, 50);
-            }, 500);
-          } else if (count !== currentCountRef.current) {
-            // Just update the count - badge width will adjust automatically
-            updateListenerCount(count);
-          }
-          
-          // Keep the Firebase debug test for edge cases where count is 0
-          if (count === 0 && window.__firebaseDebug?.testListenerEvent) {
-            window.__firebaseDebug.testListenerEvent();
-          }
-        });
-        
-        // Store unsubscribe function for cleanup
-        unsubscribeRef.current = unsubscribe;
-        
-        // Fallback check if Firebase callback doesn't execute
-        setTimeout(() => {
-          if (!callbackExecutedRef.current) {
-            if (window.__firebaseDebug?.checkActiveCount) {
-              window.__firebaseDebug.checkActiveCount()
-                .then(count => {
-                  // First-tab correction for fallback too
-                  if (isFirstTabRef.current && count === 2) {
-                    count = 1;
-                  }
-                  
-                  // Set count first (use fetched count or default to 1)
-                  updateListenerCount(count > 0 ? count : 1);
-                  
-                  // Stop loading and expand the badge
-                  setIsLoading(false);
-                  setTimeout(() => setIsExpanded(true), 50);
-                })
-                .catch(() => {
-                  // Handle error case
-                  updateListenerCount(1);
-                  setIsLoading(false);
-                  setTimeout(() => setIsExpanded(true), 50);
-                });
-            } else {
-              // If debug tools not available, just use default value
-              updateListenerCount(1);
-              setIsLoading(false);
-              setTimeout(() => setIsExpanded(true), 50);
-            }
-          }
-        }, 2000);
-      } catch (error) {
-        console.error('Error setting up listener tracking:', error);
+    // Start tracking process
+    initializeListenerTracking();
+    
+    // Set a maximum loading time of 10 seconds
+    maxLoadingTimeRef.current = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Loading timeout reached, forcing badge to show');
         updateListenerCount(1);
         setIsLoading(false);
         setTimeout(() => setIsExpanded(true), 50);
+        releaseRegistrationLock();
       }
-    }
+    }, 10000);
     
     // Clean up on unmount
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
+      }
+      
+      if (maxLoadingTimeRef.current) {
+        clearTimeout(maxLoadingTimeRef.current);
       }
     };
   }, []);
