@@ -24,13 +24,29 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
 };
 
-// Only initialize Firebase if all required config values are present
-const isFirebaseConfigured = () => {
-  return (
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
+/**
+ * Check if Firebase is properly configured with all required values
+ * @returns true if Firebase is configured, false otherwise
+ */
+function isFirebaseConfigured(): boolean {
+  // Don't expose API keys and other config values in client logs
+  const requiredKeys = [
+    'apiKey',
+    'authDomain',
+    'projectId',
+    'storageBucket',
+    'messagingSenderId',
+    'appId',
+    'databaseURL'
+  ];
+  
+  const hasAllRequiredKeys = requiredKeys.every(key => 
+    firebaseConfig && typeof firebaseConfig[key as keyof typeof firebaseConfig] === 'string' && 
+    firebaseConfig[key as keyof typeof firebaseConfig] !== ''
   );
-};
+  
+  return hasAllRequiredKeys;
+}
 
 // Initialize Firebase if configured
 let app: FirebaseApp | undefined;
