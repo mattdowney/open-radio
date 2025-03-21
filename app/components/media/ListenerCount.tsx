@@ -141,7 +141,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     <>
       <Badge 
         variant="secondary" 
-        className={`flex items-center gap-1.5 py-1 px-2.5 text-xs font-medium transition-opacity duration-300 bg-white/20 backdrop-blur-md border-none ${className}`}
+        className={`flex items-center gap-1.5 py-1 px-2.5 text-white/90 text-xs font-medium transition-opacity duration-300 bg-black/60 backdrop-blur-md border-none ${className}`}
       >
         <Headphones 
           size={12} 
