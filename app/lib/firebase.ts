@@ -1,14 +1,15 @@
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import {
-  Database,
-  DatabaseReference,
-  get,
-  getDatabase,
-  onDisconnect,
-  onValue,
-  ref,
-  remove,
-  set
+    child,
+    Database,
+    DatabaseReference,
+    get,
+    getDatabase,
+    onValue,
+    ref,
+    remove,
+    set,
+    update
 } from 'firebase/database';
 
 // Your web app's Firebase configuration
@@ -57,17 +58,22 @@ let _firebaseInitialized = false;
 // Keep track of client registration to prevent double registration
 let registeredClientId: string | null = null;
 
-// Use a shorter timeout in development to clean up stale entries faster
-// 5 minutes in milliseconds for development, 15 minutes for production
-const MAX_LISTENER_AGE = process.env.NODE_ENV === 'development' 
-  ? 5 * 60 * 1000 
-  : 15 * 60 * 1000; 
+// Global constants for listener tracking
+const MAX_LISTENER_AGE = 90000; // 90 seconds (was 60 seconds)
+const HEARTBEAT_INTERVAL = 15000; // 15 seconds (was 30 seconds)
+const CLEANUP_INTERVAL = 30000; // 30 seconds
 
 // Flag to track if we've already cleaned up stale entries
 let cleanupPerformed = false;
 
 // Flag to track if firebase permissions are denied
 let permissionsDenied = false;
+
+// Flag to track if we've already registered event listeners
+let eventsRegistered = false;
+
+// Flag to track if tracking is already in progress
+let isTrackingInProgress = false;
 
 if (typeof window !== 'undefined' && isFirebaseConfigured()) {
   try {
@@ -140,15 +146,13 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
           return;
         }
         const data = snapshot.val();
-        console.log(`Found ${Object.keys(data).length} listener entries:`);
-        console.table(Object.entries(data).map(([id, val]: [string, any]) => {
-          return {
-            id: id.substring(0, 20) + '...', // Truncate long IDs
-            timestamp: new Date(val.timestamp).toLocaleTimeString(),
-            age: Math.floor((Date.now() - val.timestamp) / 1000) + 's ago',
-            environment: val.environment || 'unknown'
-          };
-        }));
+        console.group('Current Listeners');
+        Object.entries<any>(data).forEach(([id, record]) => {
+          const age = Date.now() - record.timestamp;
+          const status = age < MAX_LISTENER_AGE ? '✅ ACTIVE' : '❌ STALE';
+          console.log(`${status} - ${id}: last ping ${Math.floor(age/1000)}s ago (${new Date(record.timestamp).toISOString()})`);
+        });
+        console.groupEnd();
       } catch (error: any) {
         console.error('Error logging listeners:', error);
         if (error.toString().includes('permission_denied')) {
@@ -189,35 +193,26 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         }
       }
     },
-    checkActiveCount: async () => {
-      if (!database || !listenersRef) return 0;
+    checkActiveCount: async (): Promise<number> => {
       try {
+        if (!database || !listenersRef) {
+          console.error('Firebase not initialized');
+          return 0;
+        }
+        
         const snapshot = await get(listenersRef);
         if (!snapshot.exists()) {
-          console.log('No listeners found, count: 0');
           return 0;
         }
         
         const data = snapshot.val();
         const now = Date.now();
         
-        // Count active (non-stale) listeners
-        const activeListeners = Object.entries<any>(data).filter(([_, record]) => {
+        const activeEntries = Object.entries<any>(data).filter(([_, record]) => {
           return record.timestamp && (now - record.timestamp < MAX_LISTENER_AGE);
-        }).length;
+        });
         
-        console.log(`📊 Active listeners count: ${activeListeners}`);
-        console.log('📊 Active listeners details:');
-        console.table(Object.entries(data)
-          .filter(([_, record]: [string, any]) => record.timestamp && (now - record.timestamp < MAX_LISTENER_AGE))
-          .map(([id, record]: [string, any]) => ({
-            id: id.substring(0, 15) + '...',
-            age: Math.floor((now - record.timestamp) / 1000) + 's',
-            environment: record.environment
-          }))
-        );
-        
-        return activeListeners;
+        return activeEntries.length;
       } catch (error) {
         console.error('Error checking active count:', error);
         return 0;
@@ -376,35 +371,44 @@ async function forceCleanupAllStaleEntries() {
 }
 
 // Clean up stale listeners that didn't properly disconnect
-async function cleanupStaleListeners() {
-  if (!database || !listenersRef) return;
-  
+async function cleanupStaleListeners(): Promise<void> {
+  if (!database || !listenersRef) {
+    console.error('Firebase not initialized');
+    return;
+  }
+
+  console.log('🧹 Cleaning up stale listeners');
   try {
     const snapshot = await get(listenersRef);
-    if (!snapshot.exists()) return;
-    
+    if (!snapshot.exists()) {
+      console.log('No listeners to clean up');
+      return;
+    }
+
     const data = snapshot.val();
     const now = Date.now();
-    let staleCount = 0;
-    
-    // Check each listener record
-    for (const [clientId, record] of Object.entries<any>(data)) {
-      // If the timestamp is older than MAX_LISTENER_AGE, remove it
-      if (record.timestamp && (now - record.timestamp > MAX_LISTENER_AGE)) {
-        const staleRef = ref(database, `listeners/${clientId}`);
-        await remove(staleRef);
-        staleCount++;
+    let cleanupCount = 0;
+    const updates: Record<string, null> = {};
+
+    // Check each listener
+    Object.entries<any>(data).forEach(([id, record]) => {
+      const age = now - record.timestamp;
+      if (age > MAX_LISTENER_AGE) {
+        console.log(`🗑️ Removing stale listener ${id.substring(0, 8)}... (${Math.floor(age/1000)}s old)`);
+        updates[id] = null;
+        cleanupCount++;
       }
+    });
+
+    // Perform batch update if there are stale listeners
+    if (cleanupCount > 0) {
+      await update(listenersRef, updates);
+      console.log(`🧹 Cleaned up ${cleanupCount} stale listeners`);
+    } else {
+      console.log('No stale listeners found');
     }
-    
-    if (staleCount > 0) {
-      console.log(`Cleaned up ${staleCount} stale listener records`);
-    }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error cleaning up stale listeners:', error);
-    if (error.toString().includes('permission_denied')) {
-      permissionsDenied = true;
-    }
   }
 }
 
@@ -414,91 +418,97 @@ const generateClientId = () => {
   return `${envTag}client-${Math.random().toString(36).substring(2, 8)}-${Date.now()}`;
 };
 
-// Only allow one tracking operation per page
-let isTrackingInProgress = false;
-
 // Track this client as an active listener
-export function trackListener() {
-  // Prevent concurrent tracking
-  if (isTrackingInProgress) {
-    console.log('Tracking already in progress');
-    return registeredClientId;
-  }
-  
-  // If already registered, return existing ID
-  if (registeredClientId) {
-    console.log('Client already registered with ID:', registeredClientId);
-    return registeredClientId;
-  }
-  
-  if (!database) {
-    console.warn('Firebase not initialized - listener tracking disabled');
+export async function trackListener(): Promise<string | null> {
+  if (!database || !listenersRef) {
+    console.error('Firebase not initialized');
     return null;
   }
+
+  // Prevent multiple tracking calls
+  if (isTrackingInProgress) {
+    console.log('Listener tracking already in progress');
+    return registeredClientId;
+  }
+  
+  isTrackingInProgress = true;
   
   try {
-    isTrackingInProgress = true;
+    // Generate client ID if needed
+    if (!registeredClientId) {
+      registeredClientId = generateClientId();
+      console.log(`📱 New client ID: ${registeredClientId}`);
+    }
     
-    // Client ID will be unique per tab/session
-    const clientId = generateClientId();
-    const clientRef = ref(database, `listeners/${clientId}`);
+    // Reference to this client's entry
+    const clientRef = child(listenersRef, registeredClientId);
     
-    // Set the client as present with current timestamp
-    set(clientRef, { 
-      timestamp: Date.now(),
-      active: true,
-      environment: process.env.NODE_ENV || 'unknown'
-    }).catch(error => {
-      console.error('Error registering listener:', error);
-      if (error.toString().includes('permission_denied')) {
-        permissionsDenied = true;
-        console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
-        console.error('Please run window.__firebaseDebug.fixPermissionIssue() for instructions');
-      }
+    // Initial registration
+    const timestamp = Date.now();
+    await set(clientRef, {
+      timestamp,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
+      registered: timestamp
     });
     
-    // When this client disconnects, remove it
-    onDisconnect(clientRef).remove().catch(error => {
-      if (error.toString().includes('permission_denied')) {
-        permissionsDenied = true;
-      }
-    });
+    console.log(`👋 Registered as active listener: ${registeredClientId}`);
     
-    // Set up a heartbeat interval to update the timestamp periodically
-    const heartbeatInterval = setInterval(() => {
-      if (database && !permissionsDenied) {
-        set(clientRef, { 
-          timestamp: Date.now(),
-          active: true,
-          environment: process.env.NODE_ENV || 'unknown'
-        }).catch(error => {
-          if (error.toString().includes('permission_denied')) {
-            permissionsDenied = true;
-            console.error('⛔️ Firebase permission denied during heartbeat');
+    // Clean up stale listeners on first registration
+    await cleanupStaleListeners();
+    
+    // Set up heartbeat to keep our entry fresh
+    let heartbeatCount = 0;
+    let heartbeatInterval: NodeJS.Timeout | null = setInterval(async () => {
+      try {
+        // Skip heartbeat if permissions are denied
+        if (permissionsDenied) {
+          console.warn('⚠️ Heartbeat skipped due to permission issues');
+          return;
+        }
+        
+        heartbeatCount++;
+        const timestamp = Date.now();
+        await update(clientRef, { timestamp });
+        console.log(`💓 Heartbeat sent (${heartbeatCount}): ${new Date(timestamp).toISOString()}`);
+        
+        // Every other heartbeat, check and clean up stale listeners
+        if (heartbeatCount % 2 === 0) {
+          await cleanupStaleListeners();
+        }
+      } catch (error: any) {
+        console.error('Error sending heartbeat:', error);
+        
+        // Check if this is a permission issue
+        if (error.toString().includes('permission_denied')) {
+          permissionsDenied = true;
+          console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
+          if (heartbeatInterval) {
             clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
           }
-        });
+        }
       }
-    }, 30000); // Update timestamp every 30 seconds
+    }, HEARTBEAT_INTERVAL);
     
-    // Clean up interval on window unload - more aggressive cleanup
-    window.addEventListener('beforeunload', () => {
-      clearInterval(heartbeatInterval);
-      // Try to remove the entry directly on unload
-      if (database && !permissionsDenied) {
-        remove(clientRef).catch(() => {
-          // Ignore errors during page unload
-        });
-      }
-    });
+    // Register window events to ensure clean disconnection
+    if (typeof window !== 'undefined' && !eventsRegistered) {
+      window.addEventListener('beforeunload', () => {
+        try {
+          // Sync removal of our client entry
+          if (registeredClientId && database && listenersRef) {
+            const clientRef = child(listenersRef, registeredClientId);
+            set(clientRef, null);
+            console.log('👋 Unregistered listener on page unload');
+          }
+        } catch (e) {
+          // Ignore errors during unload
+        }
+      });
+      
+      eventsRegistered = true;
+    }
     
-    // Store the client ID to prevent re-registration
-    registeredClientId = clientId;
-    isTrackingInProgress = false;
-    
-    console.log(`📝 Registered new listener: ${clientId}`);
-    
-    return clientId;
+    return registeredClientId;
   } catch (error) {
     console.error('Error tracking listener:', error);
     isTrackingInProgress = false;
@@ -557,8 +567,29 @@ export function getListenerCount(callback: (count: number) => void): () => void 
       return;
     }
     
+    // If we have our client ID and it's not in the list, we'll count as 1
+    let finalCount = activeListeners;
+    if (registeredClientId && activeListeners > 0) {
+      const hasOurClient = activeEntries.some(([id]) => id === registeredClientId);
+      if (!hasOurClient) {
+        console.log('🔄 Adding ourselves to listener count since our entry is missing');
+        finalCount = activeListeners + 1;
+      }
+    }
+    
     // Pass the actual count to the callback
-    callback(activeListeners);
+    callback(finalCount);
+    
+    // Trigger cleanup of stale entries if we find any
+    if (totalEntries > activeListeners) {
+      console.log(`Found ${totalEntries - activeListeners} stale entries, scheduling cleanup`);
+      // Use setTimeout to avoid blocking the callback
+      setTimeout(() => {
+        cleanupStaleListeners().catch(err => {
+          console.error('Error during automatic cleanup:', err);
+        });
+      }, 100);
+    }
   }, (error) => {
     console.error('Error getting listener count:', error);
     if (error.toString().includes('permission_denied')) {
