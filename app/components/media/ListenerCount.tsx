@@ -73,8 +73,10 @@ const COUNT_INITIALIZED_KEY = 'radio_count_initialized';
 
 // Constants to control debouncing and count changes
 const COUNT_DEBOUNCE_TIME = 800; // debounce count changes to prevent flicker
+const COUNT_STABILITY_CHECK_TIME = 5000; // time to wait before confirming a count change
 const TIMEOUT_MAX_WAIT = 8000; // maximum time to wait for Firebase data
-const INITIAL_COUNT_STABILITY_TIME = 2000; // time to wait before trusting initial count
+const INITIAL_COUNT_STABILITY_TIME = 3000; // time to wait before trusting initial count
+const MIN_COUNT_AGE_TO_TRUST_DROP = 3000; // minimum time a count must be stable before accepting a drop
 
 export function ListenerCount({ className }: ListenerCountProps) {
   const [listenerCount, setListenerCount] = useState<number | null>(null);
@@ -88,12 +90,40 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const pendingCountRef = useRef<number | null>(null);
   const pendingCountTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countStabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countHistoryRef = useRef<Array<{count: number, timestamp: number}>>([]);
   const stableCountAchievedRef = useRef<boolean>(false);
   const textRef = useRef<HTMLSpanElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstTabRef = useRef<boolean>(false);
   const maxLoadingTimeRef = useRef<NodeJS.Timeout | null>(null);
   const initialLoadCompleteRef = useRef<boolean>(false);
+  const registerTimeRef = useRef<number>(0);
+  
+  // Log count history - helps understand the pattern of changes
+  const addToCountHistory = (count: number) => {
+    countHistoryRef.current.push({
+      count,
+      timestamp: Date.now()
+    });
+    
+    // Keep only the last 10 entries
+    if (countHistoryRef.current.length > 10) {
+      countHistoryRef.current.shift();
+    }
+  };
+  
+  // Get the maximum count seen in the last N milliseconds
+  const getMaxRecentCount = (timeWindow = 10000) => {
+    const now = Date.now();
+    const recentCounts = countHistoryRef.current.filter(
+      entry => now - entry.timestamp < timeWindow
+    );
+    
+    if (recentCounts.length === 0) return null;
+    
+    // Return the maximum count seen recently
+    return Math.max(...recentCounts.map(entry => entry.count));
+  };
   
   // Get a direct count from Firebase without registering
   const fetchLatestCount = async () => {
@@ -142,8 +172,50 @@ export function ListenerCount({ className }: ListenerCountProps) {
     }
   };
   
+  // Should we accept a count reduction?
+  const shouldAcceptCountReduction = (newCount: number) => {
+    // If we have no current count, always accept the new one
+    if (currentCountRef.current === null) return true;
+    
+    // If the new count is higher, always accept it
+    if (newCount >= currentCountRef.current) return true;
+    
+    // Special case: We're in the stability period and getting a suspicious drop to 1
+    if (!stableCountAchievedRef.current && newCount === 1 && currentCountRef.current > 1) {
+      console.log(`Rejecting suspicious drop from ${currentCountRef.current} to ${newCount} during stability period`);
+      return false;
+    }
+    
+    // If our current count is very fresh (< MIN_COUNT_AGE_TO_TRUST_DROP ms), 
+    // we're suspicious of drops, especially to 1
+    const countAge = Date.now() - lastCountTimestampRef.current;
+    if (countAge < MIN_COUNT_AGE_TO_TRUST_DROP) {
+      // Check recent history to see if this drop is suspicious
+      const maxRecentCount = getMaxRecentCount(10000);
+      
+      // If we've seen a higher count recently and now getting a much lower one 
+      // (especially 1), it's likely a Firebase artifact
+      if (maxRecentCount && maxRecentCount > newCount + 1) {
+        console.log(`Rejecting suspicious drop from ${currentCountRef.current} to ${newCount} (max recent: ${maxRecentCount})`);
+        return false;
+      }
+    }
+    
+    // Otherwise, accept the reduction
+    return true;
+  };
+  
   // Debounced count update function to prevent flickering
   const scheduleCountUpdate = (newCount: number, immediate = false) => {
+    // Record this count in history
+    addToCountHistory(newCount);
+    
+    // Check if we should ignore this count (suspicious drops)
+    if (!shouldAcceptCountReduction(newCount)) {
+      console.log(`Ignoring suspicious count drop to ${newCount}`);
+      return;
+    }
+    
     // Clear any pending count updates
     if (pendingCountTimerRef.current) {
       clearTimeout(pendingCountTimerRef.current);
@@ -179,6 +251,23 @@ export function ListenerCount({ className }: ListenerCountProps) {
       currentCountRef.current = newCount;
       lastCountTimestampRef.current = Date.now();
       pendingCountRef.current = null;
+      
+      // Check for post-registration correction (the key bug fix)
+      // If we see a drop to 1 shortly after registration, schedule a stability check
+      const timeSinceRegister = Date.now() - registerTimeRef.current;
+      if (newCount === 1 && timeSinceRegister < 3000 && timeSinceRegister > 0) {
+        console.log('Detected potential post-registration dip to 1, scheduling stability check');
+        
+        // Schedule a check to verify this count
+        setTimeout(async () => {
+          // Get a fresh count directly
+          const verifiedCount = await fetchLatestCount();
+          if (verifiedCount !== null && verifiedCount > 1) {
+            console.log(`Verified count is actually ${verifiedCount}, correcting display`);
+            scheduleCountUpdate(verifiedCount, true);
+          }
+        }, 2000);
+      }
       
       // Persist to localStorage for tab sync
       persistCountToStorage(newCount);
@@ -277,6 +366,9 @@ export function ListenerCount({ className }: ListenerCountProps) {
         }
       }
       
+      // Record registration time
+      registerTimeRef.current = Date.now();
+      
       // Register this client as a listener
       trackListener();
       registrationRef.current = true;
@@ -288,14 +380,21 @@ export function ListenerCount({ className }: ListenerCountProps) {
         // Log all counts from Firebase
         console.log(`Firebase count update: ${count}`);
         
-        // Don't trust very low counts during initialization
-        if (!stableCountAchievedRef.current && count === 1 && preRegisterCount && preRegisterCount > 1) {
-          console.log('Ignoring suspicious initial count of 1');
+        // Handle drop to "1" that happens right after registration
+        const timeSinceRegister = Date.now() - registerTimeRef.current;
+        if (count === 1 && preRegisterCount && preRegisterCount > 1 && timeSinceRegister < 2000) {
+          console.log(`Ignoring temporary drop to 1 right after registration (previous: ${preRegisterCount})`);
           return;
         }
         
-        // Schedule the update (debounced)
-        scheduleCountUpdate(count);
+        // Immediately after registration, if we had a higher count before, prefer it
+        if (!stableCountAchievedRef.current && preRegisterCount && preRegisterCount > count) {
+          console.log(`Using previous count ${preRegisterCount} over new ${count} during stabilization`);
+          scheduleCountUpdate(preRegisterCount);
+        } else {
+          // Schedule the update (debounced)
+          scheduleCountUpdate(count);
+        }
         
         // If still loading, complete the loading phase
         if (isLoading && count > 0) {
@@ -366,8 +465,17 @@ export function ListenerCount({ className }: ListenerCountProps) {
       clearTimeout(countStabilityTimerRef.current);
     }
     
-    countStabilityTimerRef.current = setTimeout(() => {
+    countStabilityTimerRef.current = setTimeout(async () => {
       console.log('Count stability timeout reached, accepting current count as stable');
+      
+      // Before finalizing, check one more time to make sure we have the accurate count
+      const verifiedCount = await fetchLatestCount();
+      if (verifiedCount !== null && verifiedCount > 1 && 
+          (currentCountRef.current === null || verifiedCount > currentCountRef.current)) {
+        console.log(`Final verification: count is ${verifiedCount}, updating display`);
+        scheduleCountUpdate(verifiedCount, true);
+      }
+      
       stableCountAchievedRef.current = true;
       
       // Once stable, persist current count to localStorage
@@ -395,6 +503,20 @@ export function ListenerCount({ className }: ListenerCountProps) {
         }
       }
     }, 10000);
+  };
+  
+  // Schedule a stability check for the current count
+  const scheduleStabilityCheck = () => {
+    setTimeout(async () => {
+      if (currentCountRef.current && currentCountRef.current === 1) {
+        console.log('Verifying suspiciously low count with direct fetch');
+        const correctCount = await fetchLatestCount();
+        if (correctCount !== null && correctCount > currentCountRef.current) {
+          console.log(`Count verification: actual count is ${correctCount}, updating from ${currentCountRef.current}`);
+          scheduleCountUpdate(correctCount, true);
+        }
+      }
+    }, COUNT_STABILITY_CHECK_TIME);
   };
   
   // Listen for localStorage events from other tabs
