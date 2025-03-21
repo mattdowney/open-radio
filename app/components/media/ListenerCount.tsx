@@ -64,11 +64,17 @@ function LoadingSpinner() {
   );
 }
 
-// Create a shared storage key for saving listener counts to localStorage
+// Storage and synchronization keys
 const LISTENER_COUNT_STORAGE_KEY = 'radio_listener_count';
 const LISTENER_COUNT_TIMESTAMP_KEY = 'radio_listener_count_timestamp';
 const FIRST_TAB_KEY = 'radio_first_tab';
 const REGISTRATION_LOCK_KEY = 'radio_registration_lock';
+const COUNT_INITIALIZED_KEY = 'radio_count_initialized';
+
+// Constants to control debouncing and count changes
+const COUNT_DEBOUNCE_TIME = 800; // debounce count changes to prevent flicker
+const TIMEOUT_MAX_WAIT = 8000; // maximum time to wait for Firebase data
+const INITIAL_COUNT_STABILITY_TIME = 2000; // time to wait before trusting initial count
 
 export function ListenerCount({ className }: ListenerCountProps) {
   const [listenerCount, setListenerCount] = useState<number | null>(null);
@@ -78,76 +84,37 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const unsubscribeRef = useRef<() => void>(() => {});
   const callbackExecutedRef = useRef<boolean>(false);
   const currentCountRef = useRef<number | null>(null);
+  const lastCountTimestampRef = useRef<number>(0);
+  const pendingCountRef = useRef<number | null>(null);
+  const pendingCountTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countStabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const stableCountAchievedRef = useRef<boolean>(false);
   const textRef = useRef<HTMLSpanElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstTabRef = useRef<boolean>(false);
   const maxLoadingTimeRef = useRef<NodeJS.Timeout | null>(null);
   const initialLoadCompleteRef = useRef<boolean>(false);
   
-  // Acquire a registration lock to prevent multiple tabs from registering simultaneously
-  const acquireRegistrationLock = () => {
-    try {
-      const lockValue = localStorage.getItem(REGISTRATION_LOCK_KEY);
-      if (lockValue) {
-        const lockTime = parseInt(lockValue, 10);
-        const now = Date.now();
-        // If lock is less than 5 seconds old, it's still valid
-        if (!isNaN(lockTime) && now - lockTime < 5000) {
-          return false;
-        }
-      }
-      
-      // Set lock with current timestamp
-      localStorage.setItem(REGISTRATION_LOCK_KEY, Date.now().toString());
-      return true;
-    } catch (e) {
-      // If localStorage fails, assume we can proceed
-      return true;
-    }
-  };
-  
-  // Release the registration lock
-  const releaseRegistrationLock = () => {
-    try {
-      localStorage.removeItem(REGISTRATION_LOCK_KEY);
-    } catch (e) {
-      // Ignore errors
-    }
-  };
-  
-  // Get the latest count directly from Firebase
+  // Get a direct count from Firebase without registering
   const fetchLatestCount = async () => {
     if (!window.__firebaseDebug?.checkActiveCount) return null;
     
     try {
       const count = await window.__firebaseDebug.checkActiveCount();
-      // First-tab correction for direct fetch
-      if (isFirstTabRef.current && count === 2) {
-        console.log('Initial fetch: First tab detected with count 2, correcting to 1');
-        return 1;
-      }
-      return count > 0 ? count : 1;
+      // Log all direct count fetches for debugging
+      console.log(`Direct count fetch: ${count}`);
+      
+      // Only count > 0 values for direct fetches
+      return count > 0 ? count : null;
     } catch (err) {
       console.warn('Error during direct count fetch:', err);
       return null;
     }
   };
   
-  // Save the count to localStorage when it changes
-  const persistCountToStorage = (count: number) => {
-    try {
-      localStorage.setItem(LISTENER_COUNT_STORAGE_KEY, count.toString());
-      localStorage.setItem(LISTENER_COUNT_TIMESTAMP_KEY, Date.now().toString());
-    } catch (e) {
-      // Silently fail if localStorage isn't available
-      console.warn('Unable to save listener count to localStorage:', e);
-    }
-  };
-  
-  // Check if this is the first tab (for more accurate single-user detection)
+  // Check if this is the first tab in the browser
   const checkIfFirstTab = () => {
     try {
-      // Try to become the first tab
       const currentFirstTab = localStorage.getItem(FIRST_TAB_KEY);
       if (!currentFirstTab) {
         const newId = Date.now().toString();
@@ -161,59 +128,283 @@ export function ListenerCount({ className }: ListenerCountProps) {
     }
   };
   
-  // Handle listener count updates from any source
-  const updateListenerCount = (count: number, force = false) => {
-    // Special case: if we're the first tab and count is 2, it's likely just us
-    // This corrects a common Firebase issue where a new connection counts as 2
-    if (isFirstTabRef.current && count === 2 && !force) {
-      count = 1;
+  // Handle sync between tabs
+  const persistCountToStorage = (count: number) => {
+    try {
+      // Only persist counts that are > 0 and have passed the stability check
+      if (count > 0 && stableCountAchievedRef.current) {
+        localStorage.setItem(LISTENER_COUNT_STORAGE_KEY, count.toString());
+        localStorage.setItem(LISTENER_COUNT_TIMESTAMP_KEY, Date.now().toString());
+        localStorage.setItem(COUNT_INITIALIZED_KEY, 'true');
+      }
+    } catch (e) {
+      console.warn('Unable to save listener count to localStorage:', e);
+    }
+  };
+  
+  // Debounced count update function to prevent flickering
+  const scheduleCountUpdate = (newCount: number, immediate = false) => {
+    // Clear any pending count updates
+    if (pendingCountTimerRef.current) {
+      clearTimeout(pendingCountTimerRef.current);
+      pendingCountTimerRef.current = null;
     }
     
-    // Only update if the count has changed or we're forcing an update
-    if (force || count !== currentCountRef.current) {
-      // Log only when there's a change
-      if (count !== currentCountRef.current) {
-        console.log(`Updating listener count: ${currentCountRef.current} → ${count}`);
+    // Store the new pending count
+    pendingCountRef.current = newCount;
+    const now = Date.now();
+    
+    // If immediate or if it's been a while since last update, apply right away
+    if (immediate || (now - lastCountTimestampRef.current > COUNT_DEBOUNCE_TIME * 2)) {
+      applyCountUpdate(newCount);
+      return;
+    }
+    
+    // Otherwise, schedule the update with debounce
+    pendingCountTimerRef.current = setTimeout(() => {
+      if (pendingCountRef.current !== null) {
+        applyCountUpdate(pendingCountRef.current);
       }
+    }, COUNT_DEBOUNCE_TIME);
+  };
+  
+  // Actually apply the count update
+  const applyCountUpdate = (newCount: number) => {
+    // Only update if count has changed
+    if (newCount !== currentCountRef.current) {
+      console.log(`Applying count update: ${currentCountRef.current} → ${newCount}`);
       
-      setListenerCount(count);
-      currentCountRef.current = count;
-      persistCountToStorage(count);
+      // Update the state and refs
+      setListenerCount(newCount);
+      currentCountRef.current = newCount;
+      lastCountTimestampRef.current = Date.now();
+      pendingCountRef.current = null;
+      
+      // Persist to localStorage for tab sync
+      persistCountToStorage(newCount);
     }
   };
   
   // Check for updates from other tabs
   const checkForStorageUpdates = () => {
     try {
+      const initialized = localStorage.getItem(COUNT_INITIALIZED_KEY) === 'true';
       const storedCount = localStorage.getItem(LISTENER_COUNT_STORAGE_KEY);
       const storedTimestamp = localStorage.getItem(LISTENER_COUNT_TIMESTAMP_KEY);
       
-      if (storedCount && storedTimestamp) {
+      // Only use stored count if it's initialized, valid, and recent
+      if (initialized && storedCount && storedTimestamp) {
         const count = parseInt(storedCount, 10);
         const timestamp = parseInt(storedTimestamp, 10);
         const now = Date.now();
         
-        // Only use the stored count if it's newer than what we have and less than 30 seconds old
-        if (!isNaN(count) && !isNaN(timestamp) && now - timestamp < 30000) {
-          updateListenerCount(count);
+        if (!isNaN(count) && !isNaN(timestamp) && now - timestamp < 15000) {
+          // For cross-tab sync, we don't debounce
+          applyCountUpdate(count);
+          return true;
         }
       }
+      return false;
     } catch (e) {
-      // Silently fail if localStorage isn't available
-      console.warn('Unable to retrieve listener count from localStorage:', e);
+      console.warn('Error checking localStorage:', e);
+      return false;
     }
   };
   
-  // Listen for storage events from other tabs
+  // Acquire a registration lock
+  const acquireRegistrationLock = () => {
+    try {
+      const lockValue = localStorage.getItem(REGISTRATION_LOCK_KEY);
+      if (lockValue) {
+        const lockTime = parseInt(lockValue, 10);
+        const now = Date.now();
+        if (!isNaN(lockTime) && now - lockTime < 5000) {
+          return false;
+        }
+      }
+      
+      localStorage.setItem(REGISTRATION_LOCK_KEY, Date.now().toString());
+      return true;
+    } catch (e) {
+      return true;
+    }
+  };
+  
+  // Release registration lock
+  const releaseRegistrationLock = () => {
+    try {
+      localStorage.removeItem(REGISTRATION_LOCK_KEY);
+    } catch (e) {
+      // Ignore errors
+    }
+  };
+  
+  // Initialize Firebase connection and listener tracking
+  const initializeListenerTracking = async () => {
+    // Check if this client is already registered
+    if (registrationRef.current) return;
+    
+    // Try to get initial data from localStorage first
+    const hasStoredCount = checkForStorageUpdates();
+    
+    // Try to acquire the registration lock
+    const canRegister = acquireRegistrationLock();
+    
+    if (!canRegister) {
+      console.log('Another tab is registering, using localStorage updates');
+      
+      // If we couldn't get data from localStorage, try direct query
+      if (!hasStoredCount) {
+        const initialCount = await fetchLatestCount();
+        if (initialCount !== null) {
+          scheduleCountUpdate(initialCount);
+        }
+      }
+      
+      // Set up periodic polling for count changes
+      setupPolling();
+      return;
+    }
+    
+    try {
+      // Before registering, get the current count if possible
+      let preRegisterCount = null;
+      if (!hasStoredCount) {
+        preRegisterCount = await fetchLatestCount();
+        if (preRegisterCount !== null) {
+          // Apply immediately but don't mark as stable yet
+          scheduleCountUpdate(preRegisterCount);
+        }
+      }
+      
+      // Register this client as a listener
+      trackListener();
+      registrationRef.current = true;
+      
+      // Set up listener for count changes
+      const unsubscribe = getListenerCount((count) => {
+        callbackExecutedRef.current = true;
+        
+        // Log all counts from Firebase
+        console.log(`Firebase count update: ${count}`);
+        
+        // Don't trust very low counts during initialization
+        if (!stableCountAchievedRef.current && count === 1 && preRegisterCount && preRegisterCount > 1) {
+          console.log('Ignoring suspicious initial count of 1');
+          return;
+        }
+        
+        // Schedule the update (debounced)
+        scheduleCountUpdate(count);
+        
+        // If still loading, complete the loading phase
+        if (isLoading && count > 0) {
+          finishLoading();
+        }
+      });
+      
+      // Store for cleanup
+      unsubscribeRef.current = unsubscribe;
+      
+      // Start the count stability timer
+      startCountStabilityTimer();
+      
+      // Set up a fallback in case Firebase subscription doesn't fire
+      setTimeout(async () => {
+        if (isLoading || !callbackExecutedRef.current) {
+          console.log('Firebase subscription timeout, using fallback');
+          
+          // Try once more to get count
+          const fallbackCount = await fetchLatestCount();
+          if (fallbackCount !== null) {
+            scheduleCountUpdate(fallbackCount, true);
+          } else if (preRegisterCount !== null) {
+            scheduleCountUpdate(preRegisterCount, true);
+          } else {
+            scheduleCountUpdate(1, true);
+          }
+          
+          // Ensure loading is complete
+          finishLoading();
+        }
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error in listener tracking:', error);
+      
+      // Use fallback count
+      scheduleCountUpdate(1, true);
+      finishLoading();
+      
+      // Release lock
+      releaseRegistrationLock();
+    }
+  };
+  
+  // Finish loading and show the badge
+  const finishLoading = () => {
+    if (isLoading) {
+      setIsLoading(false);
+      
+      // Add small delay before expanding
+      setTimeout(() => {
+        setIsExpanded(true);
+        
+        // Release the lock after expanded
+        setTimeout(() => {
+          releaseRegistrationLock();
+        }, 100);
+      }, 50);
+      
+      initialLoadCompleteRef.current = true;
+    }
+  };
+  
+  // Start a timer to establish count stability
+  const startCountStabilityTimer = () => {
+    if (countStabilityTimerRef.current) {
+      clearTimeout(countStabilityTimerRef.current);
+    }
+    
+    countStabilityTimerRef.current = setTimeout(() => {
+      console.log('Count stability timeout reached, accepting current count as stable');
+      stableCountAchievedRef.current = true;
+      
+      // Once stable, persist current count to localStorage
+      if (currentCountRef.current !== null) {
+        persistCountToStorage(currentCountRef.current);
+      }
+      
+      // Set up polling for ongoing updates
+      setupPolling();
+    }, INITIAL_COUNT_STABILITY_TIME);
+  };
+  
+  // Set up periodic polling for count updates
+  const setupPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    
+    pollIntervalRef.current = setInterval(async () => {
+      if (!isLoading) {
+        const count = await fetchLatestCount();
+        if (count !== null) {
+          // For polling, we don't use immediate=true to avoid flickering
+          scheduleCountUpdate(count);
+        }
+      }
+    }, 10000);
+  };
+  
+  // Listen for localStorage events from other tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === LISTENER_COUNT_STORAGE_KEY) {
+      if (e.key === LISTENER_COUNT_STORAGE_KEY || e.key === COUNT_INITIALIZED_KEY) {
         checkForStorageUpdates();
       } else if (e.key === FIRST_TAB_KEY && e.newValue === null) {
-        // Try to become the new first tab if the previous one was closed
         checkIfFirstTab();
       } else if (e.key === REGISTRATION_LOCK_KEY && e.newValue === null) {
-        // Try to register if the lock is released
         if (!registrationRef.current && isLoading) {
           initializeListenerTracking();
         }
@@ -221,194 +412,42 @@ export function ListenerCount({ className }: ListenerCountProps) {
     };
     
     window.addEventListener('storage', handleStorageChange);
-    
-    // Try to set this as the first tab (for more accurate single-user detection)
     isFirstTabRef.current = checkIfFirstTab();
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       
-      // If this was the first tab, clear the marker when closing
       if (isFirstTabRef.current) {
         try {
           localStorage.removeItem(FIRST_TAB_KEY);
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
+        } catch (e) {}
       }
       
-      // Always release the lock if we held it
       releaseRegistrationLock();
     };
   }, []);
   
-  // Handle the registration and Firebase setup
-  const initializeListenerTracking = async () => {
-    // Prevent multiple initializations
-    if (registrationRef.current) return;
-    
-    // Try to acquire the registration lock
-    const canRegister = acquireRegistrationLock();
-    
-    // If we can't acquire the lock, rely on localStorage updates instead
-    if (!canRegister) {
-      console.log('Another tab is currently registering, waiting for updates from localStorage');
-      checkForStorageUpdates();
-      return;
-    }
-    
-    try {
-      // First, try to get the actual count directly before we register
-      // This helps us get accurate initial count
-      const initialCount = await fetchLatestCount();
-      
-      // Register this client as a listener
-      trackListener();
-      
-      // Mark as registered to prevent duplicate registrations
-      registrationRef.current = true;
-      
-      // If we got an initial count directly, use it right away
-      if (initialCount !== null) {
-        console.log(`Got initial count directly: ${initialCount}`);
-        updateListenerCount(initialCount);
-        
-        // Since we already have the count, we can show it immediately 
-        // instead of waiting for the subscription
-        setIsLoading(false);
-        setTimeout(() => {
-          setIsExpanded(true);
-          releaseRegistrationLock();
-        }, 50);
-        
-        initialLoadCompleteRef.current = true;
-      }
-      
-      // Subscribe to real-time listener count updates
-      const unsubscribe = getListenerCount((count) => {
-        callbackExecutedRef.current = true;
-        
-        // First-tab correction: If we're the first tab and count is 2, it's likely a Firebase quirk
-        if (isFirstTabRef.current && count === 2) {
-          console.log('First tab detected with count 2, correcting to 1');
-          count = 1;
-        }
-        
-        // Always update the count from subscription
-        updateListenerCount(count);
-        
-        // If initial load not already completed via direct fetch
-        if (!initialLoadCompleteRef.current) {
-          // After a brief delay, stop loading and expand the badge
-          setTimeout(() => {
-            setIsLoading(false);
-            
-            // Short delay after loading stops before expanding
-            setTimeout(() => {
-              setIsExpanded(true);
-            }, 50);
-            
-            // Release the lock now that we're done loading
-            releaseRegistrationLock();
-          }, 500);
-          
-          initialLoadCompleteRef.current = true;
-        }
-      });
-      
-      // Store unsubscribe function for cleanup
-      unsubscribeRef.current = unsubscribe;
-      
-      // Fallback check if Firebase callback doesn't execute
-      setTimeout(() => {
-        if (!callbackExecutedRef.current && !initialLoadCompleteRef.current) {
-          fetchLatestCount().then(count => {
-            if (count !== null) {
-              // Set count first
-              updateListenerCount(count);
-              
-              // Stop loading and expand the badge
-              setIsLoading(false);
-              setTimeout(() => setIsExpanded(true), 50);
-            } else {
-              // Use default value if fetch failed
-              updateListenerCount(1);
-              setIsLoading(false);
-              setTimeout(() => setIsExpanded(true), 50);
-            }
-            
-            // Mark complete and release lock
-            initialLoadCompleteRef.current = true;
-            releaseRegistrationLock();
-          }).catch(() => {
-            // Handle error case
-            updateListenerCount(1);
-            setIsLoading(false);
-            setTimeout(() => setIsExpanded(true), 50);
-            initialLoadCompleteRef.current = true;
-            releaseRegistrationLock();
-          });
-        }
-      }, 2000);
-    } catch (error) {
-      console.error('Error setting up listener tracking:', error);
-      updateListenerCount(1);
-      setIsLoading(false);
-      setTimeout(() => setIsExpanded(true), 50);
-      initialLoadCompleteRef.current = true;
-      releaseRegistrationLock();
-    }
-  };
-  
-  // Force update from Firebase every 10 seconds as a fallback
+  // Initialize tracking and setup maximum wait timeout
   useEffect(() => {
-    const setupPollInterval = () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-      
-      pollIntervalRef.current = setInterval(() => {
-        // Only poll if we're past the initial loading phase
-        if (!isLoading && currentCountRef.current !== null) {
-          fetchLatestCount().then(count => {
-            if (count !== null) {
-              // Use force=true for polling updates to ensure we always get fresh data
-              updateListenerCount(count, true);
-            }
-          }).catch(console.warn);
-        }
-      }, 10000);
-    };
-    
-    setupPollInterval();
-    
-    // Cleanup on unmount
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
-  }, [isLoading]);
-  
-  // Set up listener tracking and count subscription
-  useEffect(() => {
-    // Try to get initial count from localStorage while loading
+    // Try to get existing count data
     checkForStorageUpdates();
     
-    // Start tracking process
+    // Start tracking
     initializeListenerTracking();
     
-    // Set a maximum loading time of 10 seconds
+    // Set maximum loading time
     maxLoadingTimeRef.current = setTimeout(() => {
       if (isLoading) {
-        console.warn('Loading timeout reached, forcing badge to show');
-        updateListenerCount(1);
-        setIsLoading(false);
-        setTimeout(() => setIsExpanded(true), 50);
-        initialLoadCompleteRef.current = true;
-        releaseRegistrationLock();
+        console.warn('Maximum loading time reached, forcing badge to show');
+        
+        // Get any available count or use 1
+        const count = currentCountRef.current ?? 1;
+        scheduleCountUpdate(count, true);
+        
+        // Complete loading
+        finishLoading();
       }
-    }, 10000);
+    }, TIMEOUT_MAX_WAIT);
     
     // Clean up on unmount
     return () => {
@@ -419,13 +458,25 @@ export function ListenerCount({ className }: ListenerCountProps) {
       if (maxLoadingTimeRef.current) {
         clearTimeout(maxLoadingTimeRef.current);
       }
+      
+      if (countStabilityTimerRef.current) {
+        clearTimeout(countStabilityTimerRef.current);
+      }
+      
+      if (pendingCountTimerRef.current) {
+        clearTimeout(pendingCountTimerRef.current);
+      }
+      
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
     };
   }, []);
   
-  // Calculate display count - minimum of 1 for the UI
+  // Calculate display count
   const displayCount = typeof listenerCount === 'number' ? Math.max(1, listenerCount) : 1;
   
-  // Calculate appropriate width based on the number of digits
+  // Calculate badge width
   const getTextWidth = () => {
     const baseWidth = 32; // Icon area
     const textContent = `${displayCount} listening now`;
@@ -433,7 +484,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     return Math.ceil(baseWidth + countTextWidth);
   };
   
-  // Calculate badge width with elegant transition
+  // Badge width with transition
   const badgeWidth = isExpanded ? getTextWidth() : 32;
   
   return (
