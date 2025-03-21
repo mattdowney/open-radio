@@ -67,8 +67,7 @@ function LoadingSpinner() {
 // Create a shared storage key for saving listener counts to localStorage
 const LISTENER_COUNT_STORAGE_KEY = 'radio_listener_count';
 const LISTENER_COUNT_TIMESTAMP_KEY = 'radio_listener_count_timestamp';
-// Add a flag to track if this is a newly loaded page or not
-const IS_FIRST_PAGE_LOAD = typeof window !== 'undefined' && !window.sessionStorage.getItem('radio_session_active');
+const FIRST_TAB_KEY = 'radio_first_tab';
 
 export function ListenerCount({ className }: ListenerCountProps) {
   const [listenerCount, setListenerCount] = useState<number | null>(null);
@@ -80,27 +79,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const currentCountRef = useRef<number | null>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const initialCleanupRef = useRef<boolean>(false);
-  
-  // Mark this as an active session to track page refreshes vs. new sessions
-  useEffect(() => {
-    if (typeof window !== 'undefined' && IS_FIRST_PAGE_LOAD) {
-      window.sessionStorage.setItem('radio_session_active', 'true');
-      console.log('📝 New session detected - cleaning up stale listeners');
-      
-      // On first ever page load, clean up stale listeners
-      if (window.__firebaseDebug?.clearAllListeners && !initialCleanupRef.current) {
-        window.__firebaseDebug.clearAllListeners()
-          .then(() => {
-            initialCleanupRef.current = true;
-            console.log('🧹 Completed initial cleanup');
-          })
-          .catch(err => {
-            console.error('Error during initial cleanup:', err);
-          });
-      }
-    }
-  }, []);
+  const isFirstTabRef = useRef<boolean>(false);
   
   // Save the count to localStorage when it changes
   const persistCountToStorage = (count: number) => {
@@ -113,26 +92,41 @@ export function ListenerCount({ className }: ListenerCountProps) {
     }
   };
   
+  // Check if this is the first tab (for more accurate single-user detection)
+  const checkIfFirstTab = () => {
+    try {
+      // Try to become the first tab
+      const currentFirstTab = localStorage.getItem(FIRST_TAB_KEY);
+      if (!currentFirstTab) {
+        const newId = Date.now().toString();
+        localStorage.setItem(FIRST_TAB_KEY, newId);
+        isFirstTabRef.current = true;
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+  
   // Handle listener count updates from any source
-  const updateListenerCount = (count: number, forceUpdate = false) => {
-    // Only update if the count has changed or forced
-    if (forceUpdate || count !== currentCountRef.current) {
-      console.log(`Updating listener count: ${currentCountRef.current ?? '(none)'} → ${count}`);
-      
-      // Validate count - only accept counts of 1+ if we're registered
-      if (registrationRef.current) {
-        // If registered, ensure count is at least 1 (ourselves)
-        // For first-time loads, force it to 1 to avoid counting stale entries
-        const finalCount = IS_FIRST_PAGE_LOAD ? 1 : Math.max(1, count);
-        setListenerCount(finalCount);
-        currentCountRef.current = finalCount;
-      } else {
-        // If not registered, accept any count
-        setListenerCount(count);
-        currentCountRef.current = count;
+  const updateListenerCount = (count: number, force = false) => {
+    // Special case: if we're the first tab and count is 2, it's likely just us
+    // This corrects a common Firebase issue where a new connection counts as 2
+    if (isFirstTabRef.current && count === 2 && !force) {
+      count = 1;
+    }
+    
+    // Only update if the count has changed or we're forcing an update
+    if (force || count !== currentCountRef.current) {
+      // Log only when there's a change
+      if (count !== currentCountRef.current) {
+        console.log(`Updating listener count: ${currentCountRef.current} → ${count}`);
       }
       
-      persistCountToStorage(currentCountRef.current);
+      setListenerCount(count);
+      currentCountRef.current = count;
+      persistCountToStorage(count);
     }
   };
   
@@ -163,11 +157,29 @@ export function ListenerCount({ className }: ListenerCountProps) {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === LISTENER_COUNT_STORAGE_KEY) {
         checkForStorageUpdates();
+      } else if (e.key === FIRST_TAB_KEY && e.newValue === null) {
+        // Try to become the new first tab if the previous one was closed
+        checkIfFirstTab();
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    // Try to set this as the first tab (for more accurate single-user detection)
+    isFirstTabRef.current = checkIfFirstTab();
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      
+      // If this was the first tab, clear the marker when closing
+      if (isFirstTabRef.current) {
+        try {
+          localStorage.removeItem(FIRST_TAB_KEY);
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
   }, []);
   
   // Force update from Firebase every 10 seconds as a fallback
@@ -183,10 +195,10 @@ export function ListenerCount({ className }: ListenerCountProps) {
           if (window.__firebaseDebug?.checkActiveCount) {
             window.__firebaseDebug.checkActiveCount()
               .then(count => {
-                // For first load, only count ourselves (1)
-                const actualCount = IS_FIRST_PAGE_LOAD && count > 1 ? 1 : count;
-                // Always update with the polled value for greater accuracy
-                updateListenerCount(actualCount, true);
+                if (count > 0) {
+                  // Use force=true for polling updates to ensure we always get fresh data
+                  updateListenerCount(count, true);
+                }
               })
               .catch(err => {
                 console.warn('Error during polling update:', err);
@@ -211,10 +223,8 @@ export function ListenerCount({ className }: ListenerCountProps) {
     // Try to get initial count from localStorage while loading
     checkForStorageUpdates();
     
-    // Register this client and subscribe to listener count updates
-    const setupListener = async () => {
-      if (registrationRef.current) return; // Already registered
-      
+    // Only register once per mount
+    if (!registrationRef.current) {
       try {
         // Register this client as a listener
         trackListener();
@@ -226,13 +236,16 @@ export function ListenerCount({ className }: ListenerCountProps) {
         const unsubscribe = getListenerCount((count) => {
           callbackExecutedRef.current = true;
           
-          // For initial load, force count to 1 (ourselves) to avoid counting stale entries
-          const actualCount = IS_FIRST_PAGE_LOAD && count > 1 ? 1 : count;
-          
           // If this is the first time we're getting data
           if (currentCountRef.current === null) {
+            // First-tab correction: If we're the first tab and count is 2, it's likely a Firebase quirk
+            if (isFirstTabRef.current && count === 2) {
+              console.log('First tab detected with count 2, correcting to 1');
+              count = 1;
+            }
+            
             // Set count and persist to storage
-            updateListenerCount(actualCount);
+            updateListenerCount(count);
             
             // After a brief delay, stop loading and expand the badge
             setTimeout(() => {
@@ -243,9 +256,9 @@ export function ListenerCount({ className }: ListenerCountProps) {
                 setIsExpanded(true);
               }, 50);
             }, 500);
-          } else if (actualCount !== currentCountRef.current) {
+          } else if (count !== currentCountRef.current) {
             // Just update the count - badge width will adjust automatically
-            updateListenerCount(actualCount);
+            updateListenerCount(count);
           }
           
           // Keep the Firebase debug test for edge cases where count is 0
@@ -260,28 +273,29 @@ export function ListenerCount({ className }: ListenerCountProps) {
         // Fallback check if Firebase callback doesn't execute
         setTimeout(() => {
           if (!callbackExecutedRef.current) {
-            console.log('Firebase callback not executed after timeout, using fallback');
             if (window.__firebaseDebug?.checkActiveCount) {
               window.__firebaseDebug.checkActiveCount()
                 .then(count => {
-                  // Always start with 1 (ourselves) to avoid counting stale entries on first load
-                  const safeCount = IS_FIRST_PAGE_LOAD && count > 1 ? 1 : Math.max(1, count);
+                  // First-tab correction for fallback too
+                  if (isFirstTabRef.current && count === 2) {
+                    count = 1;
+                  }
                   
-                  // Set count first
-                  updateListenerCount(safeCount);
+                  // Set count first (use fetched count or default to 1)
+                  updateListenerCount(count > 0 ? count : 1);
                   
                   // Stop loading and expand the badge
                   setIsLoading(false);
                   setTimeout(() => setIsExpanded(true), 50);
                 })
                 .catch(() => {
-                  // Handle error case - still show 1 as a fallback
+                  // Handle error case
                   updateListenerCount(1);
                   setIsLoading(false);
                   setTimeout(() => setIsExpanded(true), 50);
                 });
             } else {
-              // If debug tools not available, just use default value of 1
+              // If debug tools not available, just use default value
               updateListenerCount(1);
               setIsLoading(false);
               setTimeout(() => setIsExpanded(true), 50);
@@ -290,15 +304,11 @@ export function ListenerCount({ className }: ListenerCountProps) {
         }, 2000);
       } catch (error) {
         console.error('Error setting up listener tracking:', error);
-        // Still show the badge with a default count of 1
         updateListenerCount(1);
         setIsLoading(false);
         setTimeout(() => setIsExpanded(true), 50);
       }
-    };
-    
-    // Start the registration process
-    setupListener();
+    }
     
     // Clean up on unmount
     return () => {
