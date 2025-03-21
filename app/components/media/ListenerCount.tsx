@@ -82,6 +82,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isFirstTabRef = useRef<boolean>(false);
   const maxLoadingTimeRef = useRef<NodeJS.Timeout | null>(null);
+  const initialLoadCompleteRef = useRef<boolean>(false);
   
   // Acquire a registration lock to prevent multiple tabs from registering simultaneously
   const acquireRegistrationLock = () => {
@@ -111,6 +112,24 @@ export function ListenerCount({ className }: ListenerCountProps) {
       localStorage.removeItem(REGISTRATION_LOCK_KEY);
     } catch (e) {
       // Ignore errors
+    }
+  };
+  
+  // Get the latest count directly from Firebase
+  const fetchLatestCount = async () => {
+    if (!window.__firebaseDebug?.checkActiveCount) return null;
+    
+    try {
+      const count = await window.__firebaseDebug.checkActiveCount();
+      // First-tab correction for direct fetch
+      if (isFirstTabRef.current && count === 2) {
+        console.log('Initial fetch: First tab detected with count 2, correcting to 1');
+        return 1;
+      }
+      return count > 0 ? count : 1;
+    } catch (err) {
+      console.warn('Error during direct count fetch:', err);
+      return null;
     }
   };
   
@@ -224,7 +243,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   }, []);
   
   // Handle the registration and Firebase setup
-  const initializeListenerTracking = () => {
+  const initializeListenerTracking = async () => {
     // Prevent multiple initializations
     if (registrationRef.current) return;
     
@@ -239,27 +258,47 @@ export function ListenerCount({ className }: ListenerCountProps) {
     }
     
     try {
+      // First, try to get the actual count directly before we register
+      // This helps us get accurate initial count
+      const initialCount = await fetchLatestCount();
+      
       // Register this client as a listener
       trackListener();
       
       // Mark as registered to prevent duplicate registrations
       registrationRef.current = true;
       
+      // If we got an initial count directly, use it right away
+      if (initialCount !== null) {
+        console.log(`Got initial count directly: ${initialCount}`);
+        updateListenerCount(initialCount);
+        
+        // Since we already have the count, we can show it immediately 
+        // instead of waiting for the subscription
+        setIsLoading(false);
+        setTimeout(() => {
+          setIsExpanded(true);
+          releaseRegistrationLock();
+        }, 50);
+        
+        initialLoadCompleteRef.current = true;
+      }
+      
       // Subscribe to real-time listener count updates
       const unsubscribe = getListenerCount((count) => {
         callbackExecutedRef.current = true;
         
-        // If this is the first time we're getting data
-        if (currentCountRef.current === null) {
-          // First-tab correction: If we're the first tab and count is 2, it's likely a Firebase quirk
-          if (isFirstTabRef.current && count === 2) {
-            console.log('First tab detected with count 2, correcting to 1');
-            count = 1;
-          }
-          
-          // Set count and persist to storage
-          updateListenerCount(count);
-          
+        // First-tab correction: If we're the first tab and count is 2, it's likely a Firebase quirk
+        if (isFirstTabRef.current && count === 2) {
+          console.log('First tab detected with count 2, correcting to 1');
+          count = 1;
+        }
+        
+        // Always update the count from subscription
+        updateListenerCount(count);
+        
+        // If initial load not already completed via direct fetch
+        if (!initialLoadCompleteRef.current) {
           // After a brief delay, stop loading and expand the badge
           setTimeout(() => {
             setIsLoading(false);
@@ -272,14 +311,8 @@ export function ListenerCount({ className }: ListenerCountProps) {
             // Release the lock now that we're done loading
             releaseRegistrationLock();
           }, 500);
-        } else if (count !== currentCountRef.current) {
-          // Just update the count - badge width will adjust automatically
-          updateListenerCount(count);
-        }
-        
-        // Keep the Firebase debug test for edge cases where count is 0
-        if (count === 0 && window.__firebaseDebug?.testListenerEvent) {
-          window.__firebaseDebug.testListenerEvent();
+          
+          initialLoadCompleteRef.current = true;
         }
       });
       
@@ -288,39 +321,33 @@ export function ListenerCount({ className }: ListenerCountProps) {
       
       // Fallback check if Firebase callback doesn't execute
       setTimeout(() => {
-        if (!callbackExecutedRef.current) {
-          if (window.__firebaseDebug?.checkActiveCount) {
-            window.__firebaseDebug.checkActiveCount()
-              .then(count => {
-                // First-tab correction for fallback too
-                if (isFirstTabRef.current && count === 2) {
-                  count = 1;
-                }
-                
-                // Set count first (use fetched count or default to 1)
-                updateListenerCount(count > 0 ? count : 1);
-                
-                // Stop loading and expand the badge
-                setIsLoading(false);
-                setTimeout(() => setIsExpanded(true), 50);
-                
-                // Release the lock
-                releaseRegistrationLock();
-              })
-              .catch(() => {
-                // Handle error case
-                updateListenerCount(1);
-                setIsLoading(false);
-                setTimeout(() => setIsExpanded(true), 50);
-                releaseRegistrationLock();
-              });
-          } else {
-            // If debug tools not available, just use default value
+        if (!callbackExecutedRef.current && !initialLoadCompleteRef.current) {
+          fetchLatestCount().then(count => {
+            if (count !== null) {
+              // Set count first
+              updateListenerCount(count);
+              
+              // Stop loading and expand the badge
+              setIsLoading(false);
+              setTimeout(() => setIsExpanded(true), 50);
+            } else {
+              // Use default value if fetch failed
+              updateListenerCount(1);
+              setIsLoading(false);
+              setTimeout(() => setIsExpanded(true), 50);
+            }
+            
+            // Mark complete and release lock
+            initialLoadCompleteRef.current = true;
+            releaseRegistrationLock();
+          }).catch(() => {
+            // Handle error case
             updateListenerCount(1);
             setIsLoading(false);
             setTimeout(() => setIsExpanded(true), 50);
+            initialLoadCompleteRef.current = true;
             releaseRegistrationLock();
-          }
+          });
         }
       }, 2000);
     } catch (error) {
@@ -328,6 +355,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
       updateListenerCount(1);
       setIsLoading(false);
       setTimeout(() => setIsExpanded(true), 50);
+      initialLoadCompleteRef.current = true;
       releaseRegistrationLock();
     }
   };
@@ -342,18 +370,12 @@ export function ListenerCount({ className }: ListenerCountProps) {
       pollIntervalRef.current = setInterval(() => {
         // Only poll if we're past the initial loading phase
         if (!isLoading && currentCountRef.current !== null) {
-          if (window.__firebaseDebug?.checkActiveCount) {
-            window.__firebaseDebug.checkActiveCount()
-              .then(count => {
-                if (count > 0) {
-                  // Use force=true for polling updates to ensure we always get fresh data
-                  updateListenerCount(count, true);
-                }
-              })
-              .catch(err => {
-                console.warn('Error during polling update:', err);
-              });
-          }
+          fetchLatestCount().then(count => {
+            if (count !== null) {
+              // Use force=true for polling updates to ensure we always get fresh data
+              updateListenerCount(count, true);
+            }
+          }).catch(console.warn);
         }
       }, 10000);
     };
@@ -383,6 +405,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
         updateListenerCount(1);
         setIsLoading(false);
         setTimeout(() => setIsExpanded(true), 50);
+        initialLoadCompleteRef.current = true;
         releaseRegistrationLock();
       }
     }, 10000);
