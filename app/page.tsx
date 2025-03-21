@@ -1,19 +1,18 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import Script from 'next/script';
 import { shuffle } from 'lodash';
-import Loading from './components/ui/Loading';
+import React, { useEffect, useRef, useState } from 'react';
 import LeftPanel from './components/layout/LeftPanel';
-import { Track, ValidatedTrack, TrackDetails } from './types/track';
+import { ListenerCount } from './components/media/ListenerCount';
+import Loading from './components/ui/Loading';
+import { cn } from './lib/utils';
 import {
-  YouTubePlayer,
   PlayerConfig,
   PlayerState,
   PlayerStateType,
+  YouTubePlayer,
 } from './types/player';
-import { YouTubePlaylistItem, YouTubeApiResponse } from './types/youtube';
-import { cn } from './lib/utils';
+import { Track, TrackDetails, ValidatedTrack } from './types/track';
 
 declare global {
   interface Window {
@@ -1375,6 +1374,10 @@ const Radio = () => {
                             onLoad={handleImageLoaded}
                           />
                         </div>
+                      </div>
+                      {/* Listener Count Badge */}
+                      <div className="absolute bottom-8 right-8 z-20">
+                        <ListenerCount />
                       </div>
                     </div>
                   </div>

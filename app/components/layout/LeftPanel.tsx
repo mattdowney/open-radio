@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
-import {
-  PlayIcon,
-  PauseIcon,
-  BackwardIcon,
-  ForwardIcon,
-  SpeakerWaveIcon,
-  SpeakerXMarkIcon,
-} from '@heroicons/react/20/solid';
 import { AlbumCover } from '@/app/components/media/AlbumCover';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { cn } from '@/app/lib/utils';
-import { TrackRating } from '../media/TrackRating';
+import {
+    BackwardIcon,
+    ForwardIcon,
+    PauseIcon,
+    PlayIcon,
+    SpeakerWaveIcon,
+    SpeakerXMarkIcon,
+} from '@heroicons/react/20/solid';
+import React, { useEffect, useState } from 'react';
 import { MarqueeTitle } from '../media/MarqueeTitle';
+import { TrackRating } from '../media/TrackRating';
 
 interface Track {
   title: string;

@@ -1,18 +1,44 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# MD Radio
+
+An immersive online radio experience built with Next.js and YouTube API.
+
+## Features
+
+- Seamless music streaming using YouTube as a source
+- Beautiful blurred album art backgrounds
+- Real-time listener count showing how many people are enjoying the radio with you
+- Track information with artist and title
+- Upcoming tracks queue
+- Volume control and playback controls
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables:
+   - Copy `.env.local.example` to `.env.local`
+   - Add your YouTube API key
+   - Configure Firebase for real-time features (see below)
+4. Run the development server: `npm run dev`
 
-```bash
-npm run dev
-```
+## Firebase Setup for Real-Time Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The real-time listener count requires Firebase Realtime Database.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+For complete setup instructions, see [Firebase Setup Guide](./docs/FIREBASE_SETUP.md).
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Tech Stack
+
+- Next.js 13+ with App Router
+- React 18
+- TypeScript
+- Tailwind CSS
+- YouTube API
+- Firebase Realtime Database for social features
+
+## License
+
+MIT
 
 ## Learn More
 
