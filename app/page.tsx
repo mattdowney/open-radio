@@ -5,12 +5,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import LeftPanel from './components/layout/LeftPanel';
 import { ListenerCount } from './components/media/ListenerCount';
 import Loading from './components/ui/Loading';
+import ShaderBackground from './components/ui/ShaderBackground';
 import { cn } from './lib/utils';
 import {
-  PlayerConfig,
-  PlayerState,
-  PlayerStateType,
-  YouTubePlayer,
+    PlayerConfig,
+    PlayerState,
+    PlayerStateType,
+    YouTubePlayer,
 } from './types/player';
 import { Track, TrackDetails, ValidatedTrack } from './types/track';
 
@@ -520,7 +521,8 @@ const Radio = () => {
       const [artist, ...titleParts] = fullTitle.split(' - ');
       const title = titleParts.join(' - ') || fullTitle;
 
-      // Use high quality thumbnail for album cover
+      // Use highest quality thumbnail possible for album cover
+      // Ensuring we prioritize maxres first, then high, etc.
       const albumCoverUrl =
         snippet.thumbnails?.maxres?.url ||
         snippet.thumbnails?.high?.url ||
@@ -531,12 +533,42 @@ const Radio = () => {
         throw new Error('No thumbnail available');
       }
 
+      // For YouTube thumbnails, ensure we're getting highest quality
+      const enhancedAlbumCoverUrl = albumCoverUrl.includes('ytimg.com')
+        ? albumCoverUrl.replace(/\/[^\/]*default\.jpg/, '/maxresdefault.jpg')
+        : albumCoverUrl;
+
+      // Debug thumbnails
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('DEBUG URL Thumbnails available:', {
+          video: videoId,
+          maxres: snippet.thumbnails?.maxres?.url ? 'available' : 'missing',
+          high: snippet.thumbnails?.high?.url ? 'available' : 'missing',
+          medium: snippet.thumbnails?.medium?.url ? 'available' : 'missing',
+          default: snippet.thumbnails?.default?.url ? 'available' : 'missing',
+          originalUrl: albumCoverUrl,
+          enhancedUrl: enhancedAlbumCoverUrl
+        });
+        
+        // Check if maxresdefault URL is actually accessible
+        fetch(enhancedAlbumCoverUrl, { method: 'HEAD' })
+          .then(response => {
+            console.log(`Thumbnail URL ${enhancedAlbumCoverUrl} accessibility:`, 
+              response.ok ? 'accessible' : 'not accessible',
+              response.status
+            );
+          })
+          .catch(error => {
+            console.error('Error checking thumbnail URL:', error);
+          });
+      }
+
       const localizedTitle = snippet.localized?.title || fullTitle;
 
       return {
         artist,
         title,
-        albumCoverUrl,
+        albumCoverUrl: enhancedAlbumCoverUrl,
         localizedTitle,
       };
     } catch (error) {
@@ -1284,7 +1316,7 @@ const Radio = () => {
         <>
           {/* Background Blur Container - Positioned absolutely */}
           {state.isUIReady && (
-            <div className="fixed inset-0 w-screen h-screen overflow-hidden">
+            <div className="fixed inset-0 lg:right-auto lg:w-[400px] w-screen h-screen overflow-hidden">
               <div className="absolute inset-0 bg-black/90" />
               <div
                 className="absolute inset-0 w-full h-full"
@@ -1366,19 +1398,13 @@ const Radio = () => {
                               willChange: 'transform, opacity',
                               backfaceVisibility: 'hidden',
                             }}
-                            src={state.albumCoverUrl.replace(
-                              'hqdefault',
-                              'default',
-                            )}
+                            src={state.albumCoverUrl}
                             alt={state.videoDetails.title}
                             onLoad={handleImageLoaded}
                           />
                         </div>
                       </div>
-                      {/* Listener Count Badge */}
-                      <div className="absolute bottom-8 right-8 z-20">
-                        <ListenerCount />
-                      </div>
+                      {/* Move the listener count badge to the right panel's shader overlay */}
                     </div>
                   </div>
                 </div>
@@ -1389,46 +1415,65 @@ const Radio = () => {
           {/* Content Layer - Positioned relative on top of background */}
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[400px_1fr] h-screen w-screen pointer-events-auto">
             {state.isUIReady && (
-              <div
-                className="relative h-full bg-black/95 p-5 text-white"
-                style={{
-                  isolation: 'isolate',
-                  backfaceVisibility: 'hidden',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
-                  backdropFilter: 'none',
-                  position: 'relative',
-                  zIndex: 100,
-                }}
-              >
+              <>
                 <div
-                  className="relative h-full"
+                  className="relative h-full bg-black/95 p-5 text-white"
                   style={{
+                    isolation: 'isolate',
+                    backfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                    willChange: 'transform',
+                    backdropFilter: 'none',
                     position: 'relative',
                     zIndex: 100,
-                    isolation: 'isolate',
                   }}
                 >
-                  <LeftPanel
-                    currentTrack={{
-                      id: state.playlist[state.currentTrackIndex] || '',
-                      title: state.videoDetails.title,
-                      albumCoverUrl: state.albumCoverUrl,
+                  <div
+                    className="relative h-full"
+                    style={{
+                      position: 'relative',
+                      zIndex: 100,
+                      isolation: 'isolate',
                     }}
-                    isPlaying={state.isPlaying}
-                    volume={state.volume}
-                    upcomingTracks={state.upcomingTracks}
-                    onPlayPause={togglePlayback}
-                    onVolumeChange={handleVolumeChange}
-                    onMuteToggle={handleMuteToggle}
-                    onSkip={handleNextTrack}
-                    onPrevious={playPrevious}
-                    hasPreviousTrack={true}
-                    onTrackSelect={handleTrackSelect}
-                    isLoadingNext={state.isLoadingNext}
-                  />
+                  >
+                    <LeftPanel
+                      currentTrack={{
+                        id: state.playlist[state.currentTrackIndex] || '',
+                        title: state.videoDetails.title,
+                        albumCoverUrl: state.albumCoverUrl,
+                      }}
+                      isPlaying={state.isPlaying}
+                      volume={state.volume}
+                      upcomingTracks={state.upcomingTracks}
+                      onPlayPause={togglePlayback}
+                      onVolumeChange={handleVolumeChange}
+                      onMuteToggle={handleMuteToggle}
+                      onSkip={handleNextTrack}
+                      onPrevious={playPrevious}
+                      hasPreviousTrack={true}
+                      onTrackSelect={handleTrackSelect}
+                      isLoadingNext={state.isLoadingNext}
+                    />
+                  </div>
                 </div>
-              </div>
+                
+                {/* Shader Background - Right side panel */}
+                <div className="relative h-full overflow-hidden bg-black">
+                  {/* Only the shader exists here, no album image background */}
+                  <ShaderBackground 
+                    className="absolute inset-0" 
+                    albumCoverUrl={state.albumCoverUrl}
+                  />
+                  
+                  {/* Optional overlay for content on top of shader */}
+                  <div className="absolute inset-0 pointer-events-none z-10">
+                    {/* Listener Count Badge */}
+                    <div className="absolute bottom-8 right-8 z-20 pointer-events-auto">
+                      <ListenerCount />
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Error Display */}
