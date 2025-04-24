@@ -8,10 +8,10 @@ import Loading from './components/ui/Loading';
 import ShaderBackground from './components/ui/ShaderBackground';
 import { cn } from './lib/utils';
 import {
-    PlayerConfig,
-    PlayerState,
-    PlayerStateType,
-    YouTubePlayer,
+  PlayerConfig,
+  PlayerState,
+  PlayerStateType,
+  YouTubePlayer,
 } from './types/player';
 import { Track, TrackDetails, ValidatedTrack } from './types/track';
 
@@ -521,8 +521,7 @@ const Radio = () => {
       const [artist, ...titleParts] = fullTitle.split(' - ');
       const title = titleParts.join(' - ') || fullTitle;
 
-      // Use highest quality thumbnail possible for album cover
-      // Ensuring we prioritize maxres first, then high, etc.
+      // Use high quality thumbnail for album cover
       const albumCoverUrl =
         snippet.thumbnails?.maxres?.url ||
         snippet.thumbnails?.high?.url ||
@@ -533,42 +532,12 @@ const Radio = () => {
         throw new Error('No thumbnail available');
       }
 
-      // For YouTube thumbnails, ensure we're getting highest quality
-      const enhancedAlbumCoverUrl = albumCoverUrl.includes('ytimg.com')
-        ? albumCoverUrl.replace(/\/[^\/]*default\.jpg/, '/maxresdefault.jpg')
-        : albumCoverUrl;
-
-      // Debug thumbnails
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('DEBUG URL Thumbnails available:', {
-          video: videoId,
-          maxres: snippet.thumbnails?.maxres?.url ? 'available' : 'missing',
-          high: snippet.thumbnails?.high?.url ? 'available' : 'missing',
-          medium: snippet.thumbnails?.medium?.url ? 'available' : 'missing',
-          default: snippet.thumbnails?.default?.url ? 'available' : 'missing',
-          originalUrl: albumCoverUrl,
-          enhancedUrl: enhancedAlbumCoverUrl
-        });
-        
-        // Check if maxresdefault URL is actually accessible
-        fetch(enhancedAlbumCoverUrl, { method: 'HEAD' })
-          .then(response => {
-            console.log(`Thumbnail URL ${enhancedAlbumCoverUrl} accessibility:`, 
-              response.ok ? 'accessible' : 'not accessible',
-              response.status
-            );
-          })
-          .catch(error => {
-            console.error('Error checking thumbnail URL:', error);
-          });
-      }
-
       const localizedTitle = snippet.localized?.title || fullTitle;
 
       return {
         artist,
         title,
-        albumCoverUrl: enhancedAlbumCoverUrl,
+        albumCoverUrl,
         localizedTitle,
       };
     } catch (error) {
@@ -1398,7 +1367,10 @@ const Radio = () => {
                               willChange: 'transform, opacity',
                               backfaceVisibility: 'hidden',
                             }}
-                            src={state.albumCoverUrl}
+                            src={state.albumCoverUrl.replace(
+                              'hqdefault',
+                              'default',
+                            )}
                             alt={state.videoDetails.title}
                             onLoad={handleImageLoaded}
                           />
