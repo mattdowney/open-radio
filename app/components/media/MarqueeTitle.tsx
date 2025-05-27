@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { cn } from '../../lib/utils';
 import Marquee from 'react-fast-marquee';
+import { cn } from '../../lib/utils';
 
 interface MarqueeTitleProps {
   title: string;
@@ -130,7 +130,7 @@ export function MarqueeTitle({
           ref={textRef}
           className={cn(
             textStyles,
-            'truncate transition-opacity duration-200',
+            'truncate transition-opacity duration-200 font-normal',
             needsMarquee && shouldAnimate ? 'opacity-0' : 'opacity-100',
           )}
         >

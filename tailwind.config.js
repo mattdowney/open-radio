@@ -15,70 +15,93 @@ module.exports = {
         green: '#5EEDA1',
         blue: '#002EFF',
         dark: '#2E2F35',
-        black: '#00020B',
+        black: '#000000',
       },
       fontFamily: {
-        seasons: [
-          'Seasons',
-          '-apple-system',
-          'BlinkMacSystemFont',
-          'Segoe UI',
-          'Roboto',
-          'Helvetica',
-          'Arial',
-          'sans-serif',
-          'Apple Color Emoji',
-          'Segoe UI Emoji',
-          'Segoe UI Symbol',
+        sans: [
+          "Geist",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica",
+          "Arial",
+          "sans-serif",
         ],
-
-        hand: ['Caveat', 'cursive'],
-        mono: ['Space Mono', 'monospace'],
+        
+        geist: [
+          "Geist",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica",
+          "Arial",
+          "sans-serif",
+        ],
+        
+        polymath: [
+          "Polymath",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
+        
+        hand: ["Caveat", "cursive"],
+        mono: [
+          "Geist Mono",
+          "Space Mono",
+          "monospace",
+        ],
       },
 
       fontVariationSettings: {
-        normal: '"wght" 100 900, "slnt" 0, "ital" 0',
-      },
+      normal: '"wght" 100 900, "slnt" 0, "ital" 0',
+    },
 
-      fontWeight: {
-        thin: 100,
-        light: 300,
-        regular: 360,
-        medium: 460,
-        semibold: 600,
-        bold: 640,
-        black: 900,
-      },
+    fontWeight: {
+      thin: 100,
+      extralight: 200,
+      light: 300,
+      regular: 360,
+      normal: 400,
+      medium: 500,
+      semibold: 600,
+      bold: 700,
+      extrabold: 800,
+      black: 900,
+    },
 
-      fontStyle: {
-        normal: 'normal',
-      },
+    fontSize: {
+      xs: "0.75rem",
+      sm: "0.85rem",
+      base: "1.1rem",
+      md: "1.3rem",
+      lg: "1.5rem",
+      xl: "1.8rem",
+      "2xl": "2rem",
+      "3xl": "2.2rem",
+      "4xl": "2.45rem",
+      "5xl": "2.6rem",
+      "6xl": "3rem",
+      "7xl": "3.12rem",
+    },
 
-      fontSize: {
-        xs: '0.75rem',
-        sm: '0.9rem',
-        base: '1.175rem',
-        md: '1.4rem',
-        lg: '1.65rem',
-        xl: '1.9rem',
-        '2xl': '2.15rem',
-        '3xl': '2.4rem',
-        '4xl': '2.65rem',
-        '5xl': '2.9rem',
-        '6xl': '3.15rem',
-        '7xl': '3.4rem',
-      },
+    letterSpacing: {
+      tightest: "-0.045em", // 0.25% wider
+      tighter: "-0.035em", // 0.25% wider
+      tight: "-0.015em", // Loosened for better spacing
+      normal: "0.0125em", // 0.25% wider
+      wide: "0.025em", // 0.25% wider
+      wider: "0.035em", // 0.25% wider
+      widest: "0.045em", // 0.25% wider
+      extraWide: "0.055em", // 0.25% wider
+    },
 
-      letterSpacing: {
-        tightest: '-0.045em', // 0.25% wider
-        tighter: '-0.035em', // 0.25% wider
-        tight: '-0.015em', // Loosened for better spacing
-        normal: '0.0125em', // 0.25% wider
-        wide: '0.025em', // 0.25% wider
-        wider: '0.035em', // 0.25% wider
-        widest: '0.045em', // 0.25% wider
-        extraWide: '0.055em', // 0.25% wider
-      },
       animation: {
         'spin-fast': 'spin 0.6s linear infinite',
         'fade-in-dramatic': 'fadeInDramatic 1.2s ease-out forwards',

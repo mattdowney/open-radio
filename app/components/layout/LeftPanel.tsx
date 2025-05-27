@@ -4,12 +4,12 @@ import { AlbumCover } from '@/app/components/media/AlbumCover';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { cn } from '@/app/lib/utils';
 import {
-    BackwardIcon,
-    ForwardIcon,
-    PauseIcon,
-    PlayIcon,
-    SpeakerWaveIcon,
-    SpeakerXMarkIcon,
+  BackwardIcon,
+  ForwardIcon,
+  PauseIcon,
+  PlayIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
 } from '@heroicons/react/20/solid';
 import React, { useEffect, useState } from 'react';
 import { MarqueeTitle } from '../media/MarqueeTitle';
@@ -143,7 +143,7 @@ const LeftPanel = ({
       {/* Middle Section - Now Playing */}
       <div className="flex-1 flex items-center p-2">
         <div className="w-full">
-          <h4 className="opacity-60 mb-4 tracking-widest">Now Playing</h4>
+          <h3 className="opacity-60 mb-4 tracking-widest font-medium uppercase text-sm">Now Playing</h3>
           <div className="space-y-4">
             <AlbumCover
               src={currentTrack.albumCoverUrl}
@@ -263,7 +263,7 @@ const LeftPanel = ({
 
       {/* Bottom Section - Up Next */}
       <div className="flex-none p-0 pb-3">
-        <h4 className="opacity-60 mb-4 tracking-widest pl-2">Up Next</h4>
+        <h3 className="opacity-60 mb-4 tracking-widest pl-2 font-medium uppercase text-sm">Up Next</h3>
         <div className="space-y-2 max-h-[calc(100vh-36rem)] overflow-y-auto">
           {upcomingTracks.map((track, index) => (
             <button

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ShaderBackgroundProps {
   className?: string;
@@ -12,9 +12,29 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
   const mouseRef = useRef<[number, number]>([0.5, 0.5]);
   const startTimeRef = useRef<number>(Date.now());
   const textureRef = useRef<WebGLTexture | null>(null);
+  const prevTextureRef = useRef<WebGLTexture | null>(null);
   const imageLoadedRef = useRef<boolean>(false);
   const lastFrameTimeRef = useRef<number | null>(null);
+  
+  // Transition state
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionStartTimeRef = useRef<number>(0);
+  const transitionDurationRef = useRef<number>(800); // 800ms transition
+  const currentAlbumUrlRef = useRef<string>('');
+  const previousAlbumUrlRef = useRef<string>('');
+  
   const albumColorsRef = useRef<Float32Array>(new Float32Array([
+    0.5, 0.3, 0.7, // color1 
+    0.2, 0.5, 0.9, // color2
+    0.3, 0.2, 0.8, // color3
+    0.8, 0.2, 0.4, // color4
+    0.4, 0.6, 0.3, // color5
+    0.7, 0.7, 0.2, // color6
+    0.9, 0.3, 0.5, // color7
+    0.3, 0.5, 0.7  // color8
+  ]));
+  
+  const prevAlbumColorsRef = useRef<Float32Array>(new Float32Array([
     0.5, 0.3, 0.7, // color1 
     0.2, 0.5, 0.9, // color2
     0.3, 0.2, 0.8, // color3
@@ -40,9 +60,11 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     uniform float u_time;
     uniform vec2 u_resolution;
     uniform sampler2D u_texture;
+    uniform sampler2D u_prevTexture;
     uniform float u_textureLoaded;
+    uniform float u_transitionProgress;
     
-    // Enhanced color palette (8 colors)
+    // Enhanced color palette (8 colors) - current
     uniform vec3 u_color1;
     uniform vec3 u_color2;
     uniform vec3 u_color3;
@@ -51,6 +73,16 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     uniform vec3 u_color6;
     uniform vec3 u_color7;
     uniform vec3 u_color8;
+    
+    // Previous color palette (8 colors) - for transitions
+    uniform vec3 u_prevColor1;
+    uniform vec3 u_prevColor2;
+    uniform vec3 u_prevColor3;
+    uniform vec3 u_prevColor4;
+    uniform vec3 u_prevColor5;
+    uniform vec3 u_prevColor6;
+    uniform vec3 u_prevColor7;
+    uniform vec3 u_prevColor8;
     
     varying vec2 v_uv;
 
@@ -134,6 +166,11 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
       return a + b * cos(6.28318 * (c * t + d));
     }
 
+    // Smooth transition function with easing
+    float easeInOutCubic(float t) {
+      return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
+    }
+
     void main() {
       vec2 uv = v_uv;
       vec2 centered = uv - 0.5;
@@ -168,8 +205,11 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
         0.4
       );
       
-      // Refined color mapping with 8 colors for elegant variation
-      vec3 color = vec3(0.0);
+      // Smooth transition progress with easing
+      float transitionProgress = easeInOutCubic(clamp(u_transitionProgress, 0.0, 1.0));
+      
+      // Calculate current colors
+      vec3 currentColor = vec3(0.0);
       
       // Create more elegant color parameters
       float t1 = finalPattern;
@@ -181,19 +221,31 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
       float t7 = fbm(centered * 2.8 + vec2(sin(time * 0.8), cos(time * 0.7)));
       float t8 = smoothstep(0.3, 0.7, length(centered) + sin(time * 0.6) * 0.15);
       
-      // Refined palette blending with 8 colors - more sophisticated mixing
-      // Base colors
-      color = u_color1 * t1 * 0.85 +
-              u_color2 * t2 * 0.75 +
-              u_color3 * t3 * 0.65 +
-              u_color4 * t4 * 0.60;
-              
-      // Additional color variation - more subtle, elegant additions
-      color += u_color5 * t5 * 0.50 +
-               u_color6 * t6 * 0.40 +
-               u_color7 * t7 * 0.35 +
-               u_color8 * t8 * 0.25;
-              
+      // Current color palette
+      currentColor = u_color1 * t1 * 0.85 +
+                     u_color2 * t2 * 0.75 +
+                     u_color3 * t3 * 0.65 +
+                     u_color4 * t4 * 0.60;
+                     
+      currentColor += u_color5 * t5 * 0.50 +
+                      u_color6 * t6 * 0.40 +
+                      u_color7 * t7 * 0.35 +
+                      u_color8 * t8 * 0.25;
+      
+      // Previous color palette (for smooth transitions)
+      vec3 prevColor = u_prevColor1 * t1 * 0.85 +
+                       u_prevColor2 * t2 * 0.75 +
+                       u_prevColor3 * t3 * 0.65 +
+                       u_prevColor4 * t4 * 0.60;
+                       
+      prevColor += u_prevColor5 * t5 * 0.50 +
+                   u_prevColor6 * t6 * 0.40 +
+                   u_prevColor7 * t7 * 0.35 +
+                   u_prevColor8 * t8 * 0.25;
+      
+      // Blend between previous and current colors during transition
+      vec3 color = mix(prevColor, currentColor, transitionProgress);
+      
       // Normalize color intensity - softer overall look
       color *= 0.75;
               
@@ -203,7 +255,12 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
       
       // Refined center glow with subtle color variation
       float centerGlow = smoothstep(0.5, 0.0, length(centered)) * 0.25;
-      color += mix(mix(u_color3, u_color7, sin(time * 0.25) * 0.5 + 0.5), vec3(1.0), 0.2) * centerGlow;
+      vec3 glowColor = mix(
+        mix(u_prevColor3, u_prevColor7, sin(time * 0.25) * 0.5 + 0.5),
+        mix(u_color3, u_color7, sin(time * 0.25) * 0.5 + 0.5),
+        transitionProgress
+      );
+      color += mix(glowColor, vec3(1.0), 0.2) * centerGlow;
       
       // Consistent vignette
       float vignetteStrength = 0.25;
@@ -448,7 +505,7 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-    // Create and set up the texture
+    // Create and set up the current texture
     textureRef.current = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
     
@@ -471,13 +528,38 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
+    // Create and set up the previous texture
+    prevTextureRef.current = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, prevTextureRef.current);
+    
+    // Fill with the same placeholder
+    gl.texImage2D(
+      gl.TEXTURE_2D, 
+      0, 
+      gl.RGBA, 
+      1, 
+      1, 
+      0, 
+      gl.RGBA, 
+      gl.UNSIGNED_BYTE, 
+      new Uint8Array([150, 100, 255, 255])
+    );
+    
+    // Set texture parameters
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
     // Get uniform locations
     const timeUniformLocation = gl.getUniformLocation(program, 'u_time');
     const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
     const textureUniformLocation = gl.getUniformLocation(program, 'u_texture');
+    const prevTextureUniformLocation = gl.getUniformLocation(program, 'u_prevTexture');
     const textureLoadedLocation = gl.getUniformLocation(program, 'u_textureLoaded');
+    const transitionProgressLocation = gl.getUniformLocation(program, 'u_transitionProgress');
     
-    // Get color uniform locations
+    // Get current color uniform locations
     const color1Location = gl.getUniformLocation(program, 'u_color1');
     const color2Location = gl.getUniformLocation(program, 'u_color2');
     const color3Location = gl.getUniformLocation(program, 'u_color3');
@@ -486,6 +568,16 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     const color6Location = gl.getUniformLocation(program, 'u_color6');
     const color7Location = gl.getUniformLocation(program, 'u_color7');
     const color8Location = gl.getUniformLocation(program, 'u_color8');
+    
+    // Get previous color uniform locations
+    const prevColor1Location = gl.getUniformLocation(program, 'u_prevColor1');
+    const prevColor2Location = gl.getUniformLocation(program, 'u_prevColor2');
+    const prevColor3Location = gl.getUniformLocation(program, 'u_prevColor3');
+    const prevColor4Location = gl.getUniformLocation(program, 'u_prevColor4');
+    const prevColor5Location = gl.getUniformLocation(program, 'u_prevColor5');
+    const prevColor6Location = gl.getUniformLocation(program, 'u_prevColor6');
+    const prevColor7Location = gl.getUniformLocation(program, 'u_prevColor7');
+    const prevColor8Location = gl.getUniformLocation(program, 'u_prevColor8');
 
     // Set up resize handler
     const handleResize = () => {
@@ -498,7 +590,7 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // Modify the render function to remove mouse tracking
+    // Render function with transition support
     const render = () => {
       const now = Date.now();
       const time = (now - startTimeRef.current) / 1000; // Time in seconds
@@ -506,19 +598,38 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
 
       gl.useProgram(program);
 
+      // Calculate transition progress
+      let transitionProgress = 1.0;
+      if (isTransitioning && transitionStartTimeRef.current > 0) {
+        const elapsed = now - transitionStartTimeRef.current;
+        transitionProgress = Math.min(elapsed / transitionDurationRef.current, 1.0);
+        
+        // End transition when complete
+        if (transitionProgress >= 1.0) {
+          setIsTransitioning(false);
+          transitionStartTimeRef.current = 0;
+        }
+      }
+
       // Update uniforms
       gl.uniform1f(timeUniformLocation, time);
       gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+      gl.uniform1f(transitionProgressLocation, transitionProgress);
       
-      // Activate and bind texture
+      // Activate and bind current texture
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
       gl.uniform1i(textureUniformLocation, 0);
       
+      // Activate and bind previous texture
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, prevTextureRef.current);
+      gl.uniform1i(prevTextureUniformLocation, 1);
+      
       // Tell shader if texture is loaded
       gl.uniform1f(textureLoadedLocation, imageLoadedRef.current ? 1.0 : 0.0);
       
-      // Pass all 8 album colors to shader
+      // Pass current album colors to shader
       const colors = albumColorsRef.current;
       gl.uniform3f(color1Location, colors[0], colors[1], colors[2]);
       gl.uniform3f(color2Location, colors[3], colors[4], colors[5]);
@@ -528,6 +639,17 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
       gl.uniform3f(color6Location, colors[15], colors[16], colors[17]);
       gl.uniform3f(color7Location, colors[18], colors[19], colors[20]);
       gl.uniform3f(color8Location, colors[21], colors[22], colors[23]);
+      
+      // Pass previous album colors to shader
+      const prevColors = prevAlbumColorsRef.current;
+      gl.uniform3f(prevColor1Location, prevColors[0], prevColors[1], prevColors[2]);
+      gl.uniform3f(prevColor2Location, prevColors[3], prevColors[4], prevColors[5]);
+      gl.uniform3f(prevColor3Location, prevColors[6], prevColors[7], prevColors[8]);
+      gl.uniform3f(prevColor4Location, prevColors[9], prevColors[10], prevColors[11]);
+      gl.uniform3f(prevColor5Location, prevColors[12], prevColors[13], prevColors[14]);
+      gl.uniform3f(prevColor6Location, prevColors[15], prevColors[16], prevColors[17]);
+      gl.uniform3f(prevColor7Location, prevColors[18], prevColors[19], prevColors[20]);
+      gl.uniform3f(prevColor8Location, prevColors[21], prevColors[22], prevColors[23]);
 
       // Set up position attribute
       gl.enableVertexAttribArray(positionAttributeLocation);
@@ -551,37 +673,74 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, []);
+  }, [isTransitioning]);
 
   // Effect to load album cover as texture when albumCoverUrl changes
   useEffect(() => {
     if (!albumCoverUrl || !canvasRef.current) return;
     
+    // Skip if this is the same URL as current
+    if (albumCoverUrl === currentAlbumUrlRef.current) return;
+    
     const gl = canvasRef.current.getContext('webgl');
-    if (!gl || !textureRef.current) return;
+    if (!gl || !textureRef.current || !prevTextureRef.current) return;
+    
+    console.log('Starting album cover transition:', {
+      from: currentAlbumUrlRef.current,
+      to: albumCoverUrl
+    });
+    
+    // Store previous colors and load previous texture
+    if (currentAlbumUrlRef.current) {
+      // Copy current colors to previous colors
+      prevAlbumColorsRef.current = new Float32Array(albumColorsRef.current);
+      
+      // Store the previous URL
+      previousAlbumUrlRef.current = currentAlbumUrlRef.current;
+      
+      // Load the previous image into the previous texture
+      const prevImage = new Image();
+      prevImage.crossOrigin = 'anonymous';
+      prevImage.onload = () => {
+        if (!gl || !prevTextureRef.current) return;
+        
+        // Bind the previous texture
+        gl.bindTexture(gl.TEXTURE_2D, prevTextureRef.current);
+        
+        // Upload the previous image into the previous texture
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, prevImage);
+        
+        console.log('Previous album artwork loaded for transition:', previousAlbumUrlRef.current);
+      };
+      prevImage.src = currentAlbumUrlRef.current;
+    }
+    
+    // Start transition
+    setIsTransitioning(true);
+    transitionStartTimeRef.current = Date.now();
     
     // Reset texture loaded flag
     imageLoadedRef.current = false;
     
-    // Create an image element to load the album cover
+    // Create an image element to load the new album cover
     const image = new Image();
     image.crossOrigin = 'anonymous'; // Needed for CORS
     
     image.onload = () => {
       if (!gl || !textureRef.current) return;
       
-      console.log('Album artwork loaded successfully:', albumCoverUrl);
+      console.log('New album artwork loaded successfully:', albumCoverUrl);
       
-      // Bind the texture
+      // Bind the current texture
       gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
       
-      // Upload the image into the texture
+      // Upload the new image into the current texture
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
       
-      // Extract expanded color palette (8 colors) from the image
+      // Extract expanded color palette (8 colors) from the new image
       const [color1, color2, color3, color4, color5, color6, color7, color8] = extractDominantColors(image);
       
-      // Update the colors ref with all 8 colors
+      // Update the current colors ref with all 8 new colors
       albumColorsRef.current = new Float32Array([
         ...color1, // Vibrant
         ...color2, // Muted
@@ -593,6 +752,9 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
         ...color8  // Accent
       ]);
       
+      // Update current URL reference
+      currentAlbumUrlRef.current = albumCoverUrl;
+      
       // Set the loaded flag
       imageLoadedRef.current = true;
     };
@@ -600,6 +762,8 @@ const ShaderBackground = ({ className, albumCoverUrl }: ShaderBackgroundProps) =
     image.onerror = (e) => {
       console.error('Error loading album cover for shader:', e);
       imageLoadedRef.current = false;
+      setIsTransitioning(false);
+      transitionStartTimeRef.current = 0;
     };
     
     // Start loading the image

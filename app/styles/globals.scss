@@ -4,32 +4,42 @@
 @tailwind utilities;
 
 /* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Geologica:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap');
 
-/* Variables */
-:root {
-  --font-seasons: 'Seasons', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol';
-  --font-hand: 'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS',
-    'Apple Chancery', cursive;
-}
-
-/* Font Face */
+/* Import Polymath Variable Font */
 @font-face {
-  font-family: 'Seasons';
-  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/Seasons-Mix-VF.woff2?v=1729796894');
-  font-weight: 300 900;
+  font-family: 'Polymath';
+  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/PolymathVar.woff2?v=1748365175') format('woff2-variations');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
-/* Mixins */
-@mixin font-seasons($weight: 600, $serif: 100, $italic: 11) {
-  font-family: var(--font-seasons);
-  font-variation-settings: 'wght'#{$weight},
-  'SERF'#{$serif},
-  'ital'#{$italic};
+@mixin font-polymath($weight: 600, $serif: 100, $italic: 11) {
+  font-family:
+    "Polymath",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol";
+  font-variation-settings: "wght" #{$weight}, "SERF" #{$serif}, "ital" #{$italic};
+}
+
+/* Tailwind Base Layer */
+@layer base {
+  * {
+    font-feature-settings: inherit;
+  }
+  
+  html {
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
 }
 
 /* Tailwind Custom Utilities */
@@ -46,78 +56,19 @@
     @apply w-[1.1em] h-[1.1em] inline-block align-middle;
     color: currentColor;
   }
+
+  .font-polymath-custom {
+    @include font-polymath();
+  }
 }
 
 /* Typography */
 
-@font-face {
-  font-family: 'Seasons';
-  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/Seasons-Mix-VF.woff2?v=1729796894');
-  font-weight: 300 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@import url('https://fonts.googleapis.com/css2?family=Geologica:wght@100..900&display=swap');
-
-@mixin font-seasons($weight: 600, $serif: 100, $italic: 11) {
-  font-family: 'Seasons', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-    'Segoe UI Symbol';
-  font-variation-settings: 'wght'#{$weight},
-  'SERF'#{$serif},
-  'ital'#{$italic};
-}
-
-.serif-50 {
-  font-variation-settings: 'SERF' 50;
-}
-
-.serif-75 {
-  font-variation-settings: 'SERF' 75;
-}
-
-.italic-7-5 {
-  font-variation-settings: 'ital' 7.5;
-}
-
-.italic-11 {
-  font-variation-settings: 'ital' 11;
-}
-
 $hand: 'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS',
   'Apple Chancery', cursive;
 
-.font-thin {
-  @include font-seasons(340, 0, 0); // Thin weight
-}
-
-.font-light {
-  @include font-seasons(440, 0, 0); // Light weight
-}
-
-.font-regular {
-  @include font-seasons(540, 0, 0); // Regular weight
-}
-
-.font-medium {
-  @include font-seasons(640, 0, 0); // Medium weight
-}
-
-.font-semibold {
-  @include font-seasons(740, 0, 0); // Semi-bold weight
-}
-
-.font-bold {
-  @include font-seasons(840, 0, 0); // Bold weight
-}
-
 .font-mono {
-  font-family: 'Geologica', monospace;
-  font-optical-sizing: auto;
-  font-weight: 500;
-  font-style: normal;
-  font-variation-settings: 'slnt' 0, 'CRSV' 0, 'SHRP' 0;
+  font-family: "Geist Mono", "Space Mono", monospace;
 }
 
 /* Color Palette */
@@ -143,10 +94,11 @@ $black: #00020B;
 
 html,
 body {
-  @apply font-seasons pb-0 leading-[1.25];
+  @apply font-geist pb-0 leading-[1.25];
   scroll-behavior: smooth;
   scrollbar-width: none;
   font-feature-settings: 'dlig' 1, 'ss04' 1;
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 h1,
@@ -155,16 +107,15 @@ h3,
 h4,
 h5,
 h6 {
-  @apply text-white tracking-normal leading-[130%];
+  @apply text-white tracking-normal leading-[130%] font-polymath;
 }
 
 h1,
 .h1 {
-  @apply text-md md:text-xl lg:text-3xl;
-  @include font-seasons(570, 0, 0);
+  @apply text-md md:text-xl lg:text-3xl font-polymath font-medium;
 
   .emphasis {
-    @include font-seasons(620, 50, 0);
+    @apply font-semibold;
     font-feature-settings: 'dlig' 1, 'ss04' 1;
   }
 }
@@ -175,11 +126,10 @@ h1,
 
 h2,
 .h2 {
-  @apply text-lg lg:text-xl;
-  @include font-seasons(570, 0, 0);
+  @apply text-lg lg:text-xl font-polymath font-medium;
 
   .emphasis {
-    @include font-seasons(560, 50, 0);
+    @apply font-medium;
     font-feature-settings: 'dlig' 1, 'ss04' 1;
   }
 }
@@ -194,18 +144,16 @@ h2.paragraph {
 
 h3,
 .h3 {
-  @apply text-md lg:text-lg;
-  @include font-seasons(570, 0, 0);
+  @apply text-md lg:text-lg font-polymath font-medium;
 }
 
 h4,
 .subhead {
-  @apply text-xs font-width-expanded tracking-widest uppercase;
-  @include font-seasons(600, 0, 0);
+  @apply text-xs font-width-expanded tracking-widest uppercase font-polymath font-semibold;
 }
 
 h5 {
-  @apply text-sm font-width-expanded uppercase tracking-wide;
+  @apply text-sm font-width-expanded uppercase tracking-wide font-polymath font-medium;
 }
 
 .subhead {
@@ -224,12 +172,10 @@ input,
 .paragraph,
 .newsletter-bonus-container,
 .bonus-container {
-  @apply text-white mb-0 text-base tracking-normal font-normal;
-  @include font-seasons(520, 10, 0);
+  @apply text-white mb-0 text-base tracking-normal font-normal font-geist;
 
   a {
-    @apply inline no-underline text-black duration-duration-fast ease-in-out;
-    @include font-seasons(640, 0, 0);
+    @apply inline no-underline text-black duration-duration-fast ease-in-out font-medium;
 
     background: linear-gradient(transparent, transparent),
       linear-gradient(to right, rgba($black, 0.15), rgba($black, 0.15)),
@@ -246,8 +192,7 @@ input,
   }
 
   a.alt-link {
-    @apply inline no-underline text-white duration-duration-fast ease-in-out;
-    @include font-seasons(640, 0, 0);
+    @apply inline no-underline text-white duration-duration-fast ease-in-out font-medium;
 
     background: linear-gradient(transparent, transparent),
       linear-gradient(to right, rgba($white, 0.15), rgba($white, 0.15)),
@@ -265,8 +210,8 @@ input,
 
   em,
   i {
-    @include font-seasons(520, 45, 5.5);
-    font-style: normal;
+    @apply font-geist;
+    font-style: italic;
   }
 }
 
@@ -298,8 +243,8 @@ li {
 
 em,
 i {
-  font-style: normal;
-  font-variation-settings: 'ital' 0, 'SERF' 45;
+  @apply font-geist;
+  font-style: italic;
 }
 
 strong {

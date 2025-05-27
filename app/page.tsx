@@ -1389,7 +1389,7 @@ const Radio = () => {
             {state.isUIReady && (
               <>
                 <div
-                  className="relative h-full bg-black/95 p-5 text-white"
+                  className="relative h-full bg-black p-5 text-white"
                   style={{
                     isolation: 'isolate',
                     backfaceVisibility: 'hidden',
