@@ -1,0 +1,250 @@
+'use client';
+
+import { useEffect, useCallback, useRef } from 'react';
+import { usePlayer } from '../contexts/PlayerContext';
+import { useQueue } from '../contexts/QueueContext';
+import { useUI } from '../contexts/UIContext';
+import { getYouTubeService, YouTubeAPIError } from '../services/youtubeService';
+import { YouTubePlayerManager } from './player/YouTubePlayerManager';
+import { RadioLayout } from './layout/RadioLayout';
+import { Track } from '../types/track';
+
+const PLAYLIST_ID = 'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
+
+export function RadioPlayer() {
+  const initializingRef = useRef(false);
+  const { state: playerState, togglePlayback } = usePlayer();
+  const { 
+    state: queueState, 
+    dispatch: queueDispatch,
+    setPlaylist,
+    advanceToNextTrack,
+    goToPreviousTrack,
+    selectTrack,
+    updateUpcomingTracks
+  } = useQueue();
+  const { state: uiState, setError, setContentReady, setLoading } = useUI();
+
+  const youtubeService = getYouTubeService();
+
+  // Initialize playlist on mount
+  useEffect(() => {
+    const initializePlaylist = async () => {
+      if (initializingRef.current) return;
+      initializingRef.current = true;
+      
+      try {
+        setLoading(true);
+        console.log('Fetching playlist...');
+        
+        const videoIds = await youtubeService.fetchPlaylistItems(PLAYLIST_ID);
+        console.log(`Loaded ${videoIds.length} tracks`);
+        
+        setPlaylist(videoIds);
+        
+        // Validate initial tracks
+        const initialTracks = videoIds.slice(0, 4);
+        const validatedTracks = await youtubeService.validateTracks(initialTracks);
+        
+        if (validatedTracks.length > 0) {
+          queueDispatch({ type: 'SET_VALIDATED_TRACKS', payload: validatedTracks });
+          
+          // Set current track
+          const currentTrack = validatedTracks[0];
+          queueDispatch({ type: 'SET_CURRENT_TRACK', payload: {
+            id: currentTrack.id,
+            title: currentTrack.details.title,
+            albumCoverUrl: currentTrack.details.albumCoverUrl,
+          }});
+          
+          // Set upcoming tracks
+          const upcoming: Track[] = validatedTracks.slice(1, 4).map(vt => ({
+            id: vt.id,
+            title: vt.details.title,
+            albumCoverUrl: vt.details.albumCoverUrl,
+          }));
+          updateUpcomingTracks(upcoming);
+          
+          setContentReady();
+        } else {
+          throw new Error('No valid tracks found in playlist');
+        }
+      } catch (error) {
+        console.error('Error initializing playlist:', error);
+        setLoading(false);
+        initializingRef.current = false;
+        if (error instanceof YouTubeAPIError) {
+          setError(error.message);
+        } else {
+          setError('Failed to load playlist. Please refresh the page.');
+        }
+      }
+    };
+
+    if (queueState.playlist.length === 0) {
+      initializePlaylist();
+    }
+  }, []);
+
+  // Update upcoming tracks when queue changes
+  const updateQueue = useCallback(async (currentIndex: number) => {
+    if (queueState.playlist.length === 0) return;
+
+    try {
+      // Get next 3 tracks (circular)
+      const nextTrackIds: string[] = [];
+      for (let i = 1; i <= 3; i++) {
+        const nextIndex = (currentIndex + i) % queueState.playlist.length;
+        nextTrackIds.push(queueState.playlist[nextIndex]);
+      }
+
+      // Validate tracks that aren't already validated
+      const unvalidatedIds = nextTrackIds.filter(id => 
+        !queueState.validatedTracks.some(vt => vt.id === id)
+      );
+
+      if (unvalidatedIds.length > 0) {
+        const newValidatedTracks = await youtubeService.validateTracks(unvalidatedIds);
+        if (newValidatedTracks.length > 0) {
+          queueDispatch({ type: 'ADD_VALIDATED_TRACKS', payload: newValidatedTracks });
+        }
+      }
+
+      // Get all validated tracks (existing + new)
+      const allValidatedTracks = [
+        ...queueState.validatedTracks,
+        ...(unvalidatedIds.length > 0 ? await youtubeService.validateTracks(unvalidatedIds) : [])
+      ];
+
+      // Update upcoming tracks
+      const upcomingTracks: Track[] = nextTrackIds
+        .map(id => {
+          const validated = allValidatedTracks.find(vt => vt.id === id);
+          return validated ? {
+            id: validated.id,
+            title: validated.details.title,
+            albumCoverUrl: validated.details.albumCoverUrl,
+          } : null;
+        })
+        .filter((track): track is Track => track !== null);
+
+      updateUpcomingTracks(upcomingTracks);
+    } catch (error) {
+      console.error('Error updating queue:', error);
+    }
+  }, [queueState.playlist, queueState.validatedTracks, youtubeService]);
+
+  // Handle track transition
+  const handleTrackTransition = useCallback(async (trackId: string) => {
+    try {
+      queueDispatch({ type: 'SET_TRANSITIONING', payload: true });
+
+      const trackIndex = queueState.playlist.indexOf(trackId);
+      if (trackIndex === -1) {
+        throw new Error('Track not found in playlist');
+      }
+
+      // Get or validate track details
+      let validatedTrack = queueState.validatedTracks.find(vt => vt.id === trackId);
+      if (!validatedTrack) {
+        const result = await youtubeService.validateTrack(trackId);
+        if (!result) {
+          throw new Error('Track validation failed');
+        }
+        validatedTrack = result;
+        queueDispatch({ type: 'ADD_VALIDATED_TRACKS', payload: [validatedTrack] });
+      }
+
+      // Update current track
+      queueDispatch({ type: 'SET_CURRENT_TRACK_INDEX', payload: trackIndex });
+      queueDispatch({ type: 'SET_CURRENT_TRACK', payload: {
+        id: validatedTrack.id,
+        title: validatedTrack.details.title,
+        albumCoverUrl: validatedTrack.details.albumCoverUrl,
+      }});
+
+      // Update queue
+      await updateQueue(trackIndex);
+      
+      queueDispatch({ type: 'SET_TRANSITIONING', payload: false });
+    } catch (error) {
+      console.error('Error during track transition:', error);
+      queueDispatch({ type: 'SET_TRANSITIONING', payload: false });
+      
+      if (error instanceof YouTubeAPIError) {
+        setError(error.message);
+      } else {
+        setError('Failed to load track');
+      }
+    }
+  }, [queueState.playlist, queueState.validatedTracks, youtubeService, queueDispatch, updateQueue]);
+
+  // Handle track end (auto-advance)
+  const handleTrackEnd = useCallback(async () => {
+    if (queueState.isTransitioning) return;
+
+    try {
+      const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
+      const nextTrackId = queueState.playlist[nextIndex];
+      
+      if (nextTrackId) {
+        await handleTrackTransition(nextTrackId);
+      }
+    } catch (error) {
+      console.error('Error advancing to next track:', error);
+      setError('Failed to advance to next track');
+    }
+  }, [queueState.isTransitioning, queueState.currentTrackIndex, queueState.playlist, handleTrackTransition]);
+
+  // Player control handlers
+  const handleNext = useCallback(() => {
+    if (queueState.playlist.length > 0) {
+      const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
+      const nextTrackId = queueState.playlist[nextIndex];
+      if (nextTrackId) {
+        handleTrackTransition(nextTrackId);
+      }
+    }
+  }, [queueState.playlist, queueState.currentTrackIndex, handleTrackTransition]);
+
+  const handlePrevious = useCallback(() => {
+    if (queueState.playlist.length > 0) {
+      const prevIndex = (queueState.currentTrackIndex - 1 + queueState.playlist.length) % queueState.playlist.length;
+      const prevTrackId = queueState.playlist[prevIndex];
+      if (prevTrackId) {
+        handleTrackTransition(prevTrackId);
+      }
+    }
+  }, [queueState.playlist, queueState.currentTrackIndex, handleTrackTransition]);
+
+  const handleTrackSelect = useCallback((trackId: string) => {
+    handleTrackTransition(trackId);
+  }, [handleTrackTransition]);
+
+  const handleError = useCallback((error: string) => {
+    setError(error);
+  }, []);
+
+  return (
+    <>
+      <YouTubePlayerManager 
+        onTrackEnd={handleTrackEnd}
+        onError={handleError}
+      />
+      <RadioLayout
+        isLoading={uiState.isInitialLoad}
+        error={uiState.error}
+        currentTrack={queueState.currentTrack}
+        upcomingTracks={queueState.upcomingTracks}
+        isPlaying={playerState.isPlaying}
+        volume={playerState.volume}
+        isLoadingNext={queueState.isLoadingNext}
+        isUIReady={uiState.isUIReady}
+        onPlayPause={togglePlayback}
+        onNext={handleNext}
+        onPrevious={handlePrevious}
+        onTrackSelect={handleTrackSelect}
+      />
+    </>
+  );
+}

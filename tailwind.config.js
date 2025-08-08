@@ -104,6 +104,7 @@ module.exports = {
 
       animation: {
         'spin-fast': 'spin 0.6s linear infinite',
+        'spin-slow': 'spin 3s linear infinite',
         'fade-in-dramatic': 'fadeInDramatic 1.2s ease-out forwards',
         'spin-pulse': 'spinAndPulse 120s linear infinite',
         'spin-only': 'spinOnly 120s linear infinite',
