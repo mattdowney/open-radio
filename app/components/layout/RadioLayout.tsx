@@ -192,9 +192,20 @@ export function RadioLayout({
                   </div>
                 </div>
                 
-                {/* Desktop Bottom UI Bar */}
-                <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-black/25 backdrop-blur-md z-20">
-                  <div className="flex items-center justify-between h-28 px-6">
+                {/* Desktop Bottom UI Bar with truly seamless gradient fade */}
+                <div className="hidden md:block absolute bottom-0 left-0 right-0 z-20" style={{ height: '60%' }}>
+                  {/* Very gradual blur fade from top to bottom */}
+                  <div 
+                    className="absolute inset-0 bg-black/25 backdrop-blur-md"
+                    style={{
+                      maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.02) 20%, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.95) 90%, black 95%, black 100%)',
+                      WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.02) 20%, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.95) 90%, black 95%, black 100%)',
+                    }}
+                  />
+                  
+                  {/* Controls positioned at bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-28">
+                    <div className="flex items-center justify-between h-full px-6">
                     {/* Current Track Info */}
                     <div className="flex flex-col justify-center flex-1 min-w-0">
                       <div className="truncate text-white text-sm">
@@ -319,6 +330,7 @@ export function RadioLayout({
                         </div>
                       </div>
                     </div>
+                  </div>
                   </div>
                 </div>
                 
