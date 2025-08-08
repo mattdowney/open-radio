@@ -72,7 +72,7 @@ export function AlbumCover({
         src={src}
         alt={alt}
         fill
-        sizes={`${imageSize}px`}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         className={cn(
           'object-cover rounded-[inherit]',
           'transition-all duration-300 ease-in-out',
@@ -92,7 +92,6 @@ export function AlbumCover({
             preloadImage(maxResSrc);
           }
         }}
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         priority={priority}
         quality={size === 'lg' ? 90 : 75}
       />
