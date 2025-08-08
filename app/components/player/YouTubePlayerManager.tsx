@@ -6,6 +6,15 @@ import { useQueue } from '../../contexts/QueueContext';
 import { useUI } from '../../contexts/UIContext';
 import { PlayerState, YouTubePlayer } from '../../types/player';
 
+declare global {
+  interface Window {
+    YT?: {
+      Player: new (elementId: string, config: any) => YouTubePlayer;
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 interface YouTubePlayerManagerProps {
   onTrackEnd: () => void;
   onError: (error: string) => void;
@@ -79,7 +88,8 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         }
 
         // Create player instance
-        const player = new window.YT.Player('radio-player', {
+        const YTGlobal = window.YT as NonNullable<typeof window.YT>;
+        const player = new YTGlobal.Player('radio-player', {
           height: '0',
           width: '0',
           videoId: firstVideoId,
@@ -183,6 +193,8 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
     // If it's a video-specific error, try playing the next track
     if ([100, 101, 150].includes(event.data)) {
+      // Ensure auto-advance logic knows to continue playing
+      playerDispatch({ type: 'SET_AUTO_ADVANCING', payload: true });
       onTrackEnd();
       return;
     }
@@ -208,12 +220,14 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         break;
 
       case PlayerState.PAUSED:
-        // Check if this pause was triggered by DevTools/focus loss
-        // If the player should be playing and we have user interaction, resume
-        if (playerState.hasUserInteracted && !document.hidden) {
+        // If we should be playing (user interacted OR auto-advancing) and tab visible, resume
+        if ((playerState.hasUserInteracted || playerState.isAutoAdvancing) && !document.hidden) {
           setTimeout(() => {
-            if (playerRef.current && playerState.isPlaying) {
-              playerRef.current.playVideo();
+            if (playerRef.current) {
+              try {
+                playerRef.current.playVideo();
+                playerDispatch({ type: 'SET_PLAYING', payload: true });
+              } catch {}
             }
           }, 100);
         } else {
@@ -222,6 +236,17 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         break;
 
       case PlayerState.BUFFERING:
+        break;
+
+      case PlayerState.CUED:
+        // When a video is cued and we should continue playing, kick playback
+        if (playerRef.current && (playerState.isPlaying || playerState.hasUserInteracted || playerState.isAutoAdvancing)) {
+          setTimeout(() => {
+            try {
+              playerRef.current?.playVideo();
+            } catch {}
+          }, 100);
+        }
         break;
 
       case PlayerState.UNSTARTED:
@@ -250,13 +275,25 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         
         // Auto-play if we should continue playing
         if (shouldAutoPlay) {
-          // Small delay to ensure video is loaded before playing
-          setTimeout(() => {
-            if (playerRef.current) {
+          // Try immediate play, with a short retry if needed
+          const tryPlay = (attempt: number) => {
+            if (!playerRef.current) return;
+            try {
               playerRef.current.playVideo();
               playerDispatch({ type: 'SET_PLAYING', payload: true });
+              if (attempt < 2) {
+                setTimeout(() => {
+                  // If still not playing, try again once
+                  tryPlay(attempt + 1);
+                }, 250);
+              }
+            } catch {
+              if (attempt < 2) {
+                setTimeout(() => tryPlay(attempt + 1), 250);
+              }
             }
-          }, 100);
+          };
+          tryPlay(0);
         }
       }
     };

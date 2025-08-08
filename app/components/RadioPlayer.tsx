@@ -95,22 +95,23 @@ export function RadioPlayer() {
         nextTrackIds.push(queueState.playlist[nextIndex]);
       }
 
-      // Validate tracks that aren't already validated
+      // Validate tracks that aren't already validated (do this ONCE and reuse results)
       const unvalidatedIds = nextTrackIds.filter(id => 
         !queueState.validatedTracks.some(vt => vt.id === id)
       );
 
+      let newlyValidatedTracks: typeof queueState.validatedTracks = [];
       if (unvalidatedIds.length > 0) {
-        const newValidatedTracks = await youtubeService.validateTracks(unvalidatedIds);
-        if (newValidatedTracks.length > 0) {
-          queueDispatch({ type: 'ADD_VALIDATED_TRACKS', payload: newValidatedTracks });
+        newlyValidatedTracks = await youtubeService.validateTracks(unvalidatedIds);
+        if (newlyValidatedTracks.length > 0) {
+          queueDispatch({ type: 'ADD_VALIDATED_TRACKS', payload: newlyValidatedTracks });
         }
       }
 
-      // Get all validated tracks (existing + new)
+      // Get all validated tracks (existing + newly validated)
       const allValidatedTracks = [
         ...queueState.validatedTracks,
-        ...(unvalidatedIds.length > 0 ? await youtubeService.validateTracks(unvalidatedIds) : [])
+        ...newlyValidatedTracks,
       ];
 
       // Update upcoming tracks
@@ -135,7 +136,7 @@ export function RadioPlayer() {
   }, [queueState.playlist, queueState.validatedTracks, youtubeService]);
 
   // Handle track transition
-  const handleTrackTransition = useCallback(async (trackId: string) => {
+  const handleTrackTransition = useCallback(async (trackId: string, retryCount: number = 0) => {
     try {
       queueDispatch({ type: 'SET_TRANSITIONING', payload: true });
 
@@ -149,6 +150,13 @@ export function RadioPlayer() {
       if (!validatedTrack) {
         const result = await youtubeService.validateTrack(trackId);
         if (!result) {
+          // Try next track if current is invalid
+          const nextIndex = (trackIndex + 1) % queueState.playlist.length;
+          const nextId = queueState.playlist[nextIndex];
+          if (retryCount < 3 && nextId && nextId !== trackId) {
+            await handleTrackTransition(nextId, retryCount + 1);
+            return;
+          }
           throw new Error('Track validation failed');
         }
         validatedTrack = result;
