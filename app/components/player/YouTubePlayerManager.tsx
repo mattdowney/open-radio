@@ -208,8 +208,31 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
     switch (playerStateValue) {
       case PlayerState.ENDED:
-        // Set auto-advancing flag before calling onTrackEnd
+        // Set auto-advancing flag and proactively load next video to avoid stalls
         playerDispatch({ type: 'SET_AUTO_ADVANCING', payload: true });
+
+        try {
+          const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
+          const nextTrackId = queueState.playlist[nextIndex];
+          if (playerRef.current && nextTrackId) {
+            playerRef.current.loadVideoById(nextTrackId);
+            playerDispatch({ type: 'SET_CURRENT_VIDEO', payload: nextTrackId });
+            // Attempt to play immediately; retry briefly
+            const tryPlay = (attempt: number) => {
+              if (!playerRef.current) return;
+              try {
+                playerRef.current.playVideo();
+                playerDispatch({ type: 'SET_PLAYING', payload: true });
+              } catch {}
+              if (attempt < 2) {
+                setTimeout(() => tryPlay(attempt + 1), 200);
+              }
+            };
+            tryPlay(0);
+          }
+        } catch {}
+
+        // Allow app state to update track details/indices
         onTrackEnd();
         break;
 

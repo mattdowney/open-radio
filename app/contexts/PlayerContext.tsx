@@ -87,9 +87,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const play = () => {
     if (playerRef.current && state.isPlayerReady) {
-      playerRef.current.playVideo();
-      dispatch({ type: 'SET_PLAYING', payload: true });
-      dispatch({ type: 'SET_USER_INTERACTED', payload: true });
+      try {
+        playerRef.current.playVideo();
+      } finally {
+        dispatch({ type: 'SET_PLAYING', payload: true });
+        dispatch({ type: 'SET_USER_INTERACTED', payload: true });
+      }
     }
   };
 
