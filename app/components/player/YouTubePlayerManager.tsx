@@ -226,7 +226,6 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
             if (playerRef.current) {
               try {
                 playerRef.current.playVideo();
-                playerDispatch({ type: 'SET_PLAYING', payload: true });
               } catch {}
             }
           }, 100);
@@ -288,7 +287,6 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
             if (!playerRef.current) return;
             try {
               playerRef.current.playVideo();
-              playerDispatch({ type: 'SET_PLAYING', payload: true });
               if (attempt < 2) {
                 setTimeout(() => {
                   // If still not playing, try again once
@@ -302,6 +300,16 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
             }
           };
           tryPlay(0);
+
+          // Watchdog: verify playback started shortly after load
+          setTimeout(() => {
+            try {
+              const state = playerRef.current?.getPlayerState();
+              if (state !== PlayerState.PLAYING && (playerState.isAutoAdvancing || playerState.hasUserInteracted || playerState.isPlaying)) {
+                playerRef.current?.playVideo();
+              }
+            } catch {}
+          }, 800);
         }
       }
     };

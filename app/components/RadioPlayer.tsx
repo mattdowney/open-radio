@@ -196,23 +196,18 @@ export function RadioPlayer() {
 
   // Handle track end (auto-advance)
   const handleTrackEnd = useCallback(async () => {
-    if (queueState.isTransitioning) {
-      return;
-    }
-
+    // Do not block ENDED if transitioning flag lingers; try advance anyway
     try {
       const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
       const nextTrackId = queueState.playlist[nextIndex];
-      
       if (nextTrackId) {
         await handleTrackTransition(nextTrackId);
-        // The YouTubePlayerManager will handle auto-playing
       }
     } catch (error) {
       console.error('Error advancing to next track:', error);
       setError('Failed to advance to next track');
     }
-  }, [queueState.isTransitioning, queueState.currentTrackIndex, queueState.playlist, handleTrackTransition, setError]);
+  }, [queueState.currentTrackIndex, queueState.playlist, handleTrackTransition, setError]);
 
   // Player control handlers
   const handleNext = useCallback(() => {
