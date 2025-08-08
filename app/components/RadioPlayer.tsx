@@ -171,10 +171,17 @@ export function RadioPlayer() {
         albumCoverUrl: validatedTrack.details.albumCoverUrl,
       }});
 
-      // Update queue
-      await updateQueue(trackIndex);
-      
+      // Clear transitioning immediately so subsequent ENDED events aren't ignored
       queueDispatch({ type: 'SET_TRANSITIONING', payload: false });
+
+      // Update upcoming tracks asynchronously (don't block transitions)
+      void (async () => {
+        try {
+          await updateQueue(trackIndex);
+        } catch (e) {
+          console.error('Deferred queue update failed:', e);
+        }
+      })();
     } catch (error) {
       console.error('Error during track transition:', error);
       queueDispatch({ type: 'SET_TRANSITIONING', payload: false });

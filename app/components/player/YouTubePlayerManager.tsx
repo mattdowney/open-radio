@@ -250,6 +250,14 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         break;
 
       case PlayerState.UNSTARTED:
+        // Occasionally gets stuck; if we intend to play, nudge it
+        if (playerRef.current && (playerState.isPlaying || playerState.hasUserInteracted || playerState.isAutoAdvancing)) {
+          setTimeout(() => {
+            try {
+              playerRef.current?.playVideo();
+            } catch {}
+          }, 100);
+        }
         break;
 
       default:
