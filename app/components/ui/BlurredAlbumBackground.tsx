@@ -1,60 +1,100 @@
-import { useState, useCallback } from 'react';
+'use client';
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 interface BlurredAlbumBackgroundProps {
   className?: string;
   albumCoverUrl?: string;
+  blurAmount?: number;
+  transitionDuration?: number;
+  animate?: boolean;
 }
 
-const BlurredAlbumBackground = ({ className, albumCoverUrl }: BlurredAlbumBackgroundProps) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+const BlurredAlbumBackground = ({ 
+  className, 
+  albumCoverUrl,
+  blurAmount = 24,
+  transitionDuration = 0.8,
+  animate = true
+}: BlurredAlbumBackgroundProps) => {
+  const [currentUrl, setCurrentUrl] = useState(albumCoverUrl);
 
-  const handleImageLoad = useCallback(() => {
-    setImageLoaded(true);
-    setImageError(false);
-  }, []);
-
-  const handleImageError = useCallback(() => {
-    setImageLoaded(false);
-    setImageError(true);
-  }, []);
+  // Handle URL changes with smooth transition
+  useEffect(() => {
+    if (albumCoverUrl !== currentUrl) {
+      setCurrentUrl(albumCoverUrl);
+    }
+  }, [albumCoverUrl, currentUrl]);
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className || ''}`}>
-      {/* Fallback gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-blue-900/50 to-pink-900/50" />
+      {/* SVG Filter Definition for Noise */}
+      <svg className="absolute w-0 h-0" aria-hidden="true">
+        <defs>
+          <filter id="album-noise-filter">
+            <feTurbulence 
+              type="fractalNoise" 
+              baseFrequency="0.9" 
+              numOctaves="4" 
+              seed="15"
+            />
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+              <feFuncA type="discrete" tableValues="0 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 1"/>
+            </feComponentTransfer>
+            <feGaussianBlur stdDeviation="0.5"/>
+            <feComposite operator="over"/>
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Fallback dark background */}
+      <div className="absolute inset-0 bg-black" />
       
-      {/* Blurred album cover */}
-      {albumCoverUrl && !imageError && (
-        <div 
-          className={`absolute inset-0 transition-opacity duration-500 ${
-            imageLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <img
-            src={albumCoverUrl}
-            alt="Album cover background"
-            className="absolute inset-0 w-full h-full object-cover scale-110 blur-3xl brightness-50 saturate-150"
-            onLoad={handleImageLoad}
-            onError={handleImageError}
+      {/* Album cover as background with blur - simplified animation */}
+      <AnimatePresence mode="wait">
+        {currentUrl && (
+          <motion.div
+            key={currentUrl}
+            className="absolute inset-0 w-full h-full"
             style={{
-              filter: 'blur(60px) brightness(0.4) saturate(1.5)',
-              transform: 'scale(1.1)',
+              filter: `blur(${blurAmount}px)`,
+              willChange: 'opacity',
             }}
-          />
-          
-          {/* Additional blur overlay for extra effect */}
-          <div 
-            className="absolute inset-0 backdrop-blur-xl bg-black/30"
-            style={{
-              backdropFilter: 'blur(20px)',
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ 
+              duration: transitionDuration,
+              ease: "easeInOut"
             }}
-          />
-        </div>
-      )}
+          >
+            <img
+              src={currentUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                transform: 'scale(1.2)',
+                willChange: 'transform',
+              }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {/* Dark overlay to ensure readability */}
-      <div className="absolute inset-0 bg-black/40" />
+      {/* Noise overlay to prevent banding */}
+      <div 
+        className="absolute inset-0 opacity-[0.025] mix-blend-screen pointer-events-none"
+        style={{
+          filter: 'url(#album-noise-filter)',
+          transform: 'scale(1.5)',
+          willChange: 'auto',
+        }}
+      />
+      
+      {/* Dark overlay for text readability */}
+      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
     </div>
   );
 };

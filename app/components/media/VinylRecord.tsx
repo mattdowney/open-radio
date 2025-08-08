@@ -41,64 +41,26 @@ export function VinylRecord({
       )}
     >
       {/* Main vinyl record container */}
-      <div className="relative w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-gray-900 to-black shadow-2xl">
+      <div className="relative w-full h-full rounded-full overflow-hidden bg-black shadow-2xl">
         {/* Spinning content */}
         <div className={cn(
           "absolute inset-0",
           isPlaying && !isLoading && 'animate-spin-slow'
         )}>
           
-          {/* Vinyl grooves - subtle concentric circles with slight variations */}
-        <svg 
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          viewBox="0 0 400 400"
-          style={{ opacity: 0.8 }}
-        >
-          {/* Create subtle grooves with 1px lines and slight variations */}
-          {Array.from({ length: 200 }, (_, i) => {
-            // Start from label edge (35% = 70px on 200px viewbox) and go outward
-            const baseRadius = 70 + (i * 0.65); // Tighter spacing for more grooves
-            if (baseRadius > 196) return null; // Stop before edge
-            
-            // Very subtle variation in spacing
-            const variation = Math.sin(i * 0.8) * 0.15 + Math.cos(i * 2.1) * 0.1;
-            const radius = baseRadius + variation;
-            
-            // Occasional slightly darker or lighter grooves
-            const isAccent = i % 13 === 0;
-            const isLight = i % 19 === 7;
-            
-            const strokeOpacity = isAccent ? 0.4 : isLight ? 0.15 : 0.25;
-            const strokeWidth = isAccent ? 1.2 : 1; // Most are 1px, accents slightly thicker
-            
-            return (
-              <circle
-                key={i}
-                cx="200"
-                cy="200"
-                r={radius}
-                fill="none"
-                stroke="rgba(0,0,0,1)"
-                strokeWidth={strokeWidth}
-                opacity={strokeOpacity}
-              />
-            );
-          })}
-        </svg>
         
-        {/* Very subtle radial texture */}
+        {/* Subtle vinyl surface shading */}
         <div 
           className="absolute inset-0 pointer-events-none rounded-full"
           style={{
             background: `
-              repeating-radial-gradient(
+              radial-gradient(
                 circle at center,
                 transparent 35%,
-                rgba(0, 0, 0, 0.03) 35.05%,
-                transparent 35.1%
+                rgba(40, 40, 40, 0.3) 70%,
+                rgba(30, 30, 30, 0.5) 100%
               )
             `,
-            mixBlendMode: 'multiply',
           }}
         />
         
@@ -115,25 +77,26 @@ export function VinylRecord({
                 'transition-opacity duration-300',
                 imageLoading ? 'opacity-0' : 'opacity-100'
               )}
-              onLoadingComplete={() => setImageLoading(false)}
+              onLoad={() => setImageLoading(false)}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               priority
               quality={90}
             />
           </div>
           
           {/* Center spindle hole */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[12%] h-[12%] rounded-full bg-gray-900 shadow-inner">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[12%] h-[12%] rounded-full bg-black shadow-inner">
             <div className="absolute inset-[25%] rounded-full bg-black" />
           </div>
         </div>
         
       </div>
       
-      {/* Static light reflection from bottom-right */}
+      {/* Light reflection from bottom right */}
       <div 
         className="absolute inset-0 pointer-events-none rounded-full"
         style={{
-          background: 'radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.15) 0%, transparent 40%)',
+          background: 'radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.2) 0%, transparent 50%)',
           mixBlendMode: 'overlay',
         }}
       />

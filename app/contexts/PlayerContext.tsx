@@ -12,6 +12,7 @@ export interface PlayerState {
   duration: number | null;
   currentTime: number;
   hasUserInteracted: boolean;
+  isAutoAdvancing: boolean;
 }
 
 export type PlayerAction =
@@ -23,6 +24,7 @@ export type PlayerAction =
   | { type: 'SET_DURATION'; payload: number | null }
   | { type: 'SET_CURRENT_TIME'; payload: number }
   | { type: 'SET_USER_INTERACTED'; payload: boolean }
+  | { type: 'SET_AUTO_ADVANCING'; payload: boolean }
   | { type: 'RESET_PLAYER' };
 
 const initialPlayerState: PlayerState = {
@@ -34,6 +36,7 @@ const initialPlayerState: PlayerState = {
   duration: null,
   currentTime: 0,
   hasUserInteracted: false,
+  isAutoAdvancing: false,
 };
 
 function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
@@ -54,6 +57,8 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       return { ...state, currentTime: action.payload };
     case 'SET_USER_INTERACTED':
       return { ...state, hasUserInteracted: action.payload };
+    case 'SET_AUTO_ADVANCING':
+      return { ...state, isAutoAdvancing: action.payload };
     case 'RESET_PLAYER':
       return { ...initialPlayerState, hasUserInteracted: state.hasUserInteracted };
     default:

@@ -132,6 +132,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     try {
       const count = await window.__firebaseDebug.checkActiveCount();
       // Log all direct count fetches for debugging
+      console.log(`Direct count fetch: ${count}`);
       
       // Only count > 0 values for direct fetches
       return count > 0 ? count : null;
@@ -181,6 +182,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     
     // Special case: We're in the stability period and getting a suspicious drop to 1
     if (!stableCountAchievedRef.current && newCount === 1 && currentCountRef.current > 1) {
+      console.log(`Rejecting suspicious drop from ${currentCountRef.current} to ${newCount} during stability period`);
       return false;
     }
     
@@ -194,6 +196,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
       // If we've seen a higher count recently and now getting a much lower one 
       // (especially 1), it's likely a Firebase artifact
       if (maxRecentCount && maxRecentCount > newCount + 1) {
+        console.log(`Rejecting suspicious drop from ${currentCountRef.current} to ${newCount} (max recent: ${maxRecentCount})`);
         return false;
       }
     }
@@ -209,6 +212,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     
     // Check if we should ignore this count (suspicious drops)
     if (!shouldAcceptCountReduction(newCount)) {
+      console.log(`Ignoring suspicious count drop to ${newCount}`);
       return;
     }
     
@@ -240,6 +244,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const applyCountUpdate = (newCount: number) => {
     // Only update if count has changed
     if (newCount !== currentCountRef.current) {
+      console.log(`Applying count update: ${currentCountRef.current} → ${newCount}`);
       
       // Update the state and refs
       setListenerCount(newCount);
@@ -251,12 +256,14 @@ export function ListenerCount({ className }: ListenerCountProps) {
       // If we see a drop to 1 shortly after registration, schedule a stability check
       const timeSinceRegister = Date.now() - registerTimeRef.current;
       if (newCount === 1 && timeSinceRegister < 3000 && timeSinceRegister > 0) {
+        console.log('Detected potential post-registration dip to 1, scheduling stability check');
         
         // Schedule a check to verify this count
         setTimeout(async () => {
           // Get a fresh count directly
           const verifiedCount = await fetchLatestCount();
           if (verifiedCount !== null && verifiedCount > 1) {
+            console.log(`Verified count is actually ${verifiedCount}, correcting display`);
             scheduleCountUpdate(verifiedCount, true);
           }
         }, 2000);
@@ -333,6 +340,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     const canRegister = acquireRegistrationLock();
     
     if (!canRegister) {
+      console.log('Another tab is registering, using localStorage updates');
       
       // If we couldn't get data from localStorage, try direct query
       if (!hasStoredCount) {
@@ -370,15 +378,18 @@ export function ListenerCount({ className }: ListenerCountProps) {
         callbackExecutedRef.current = true;
         
         // Log all counts from Firebase
+        console.log(`Firebase count update: ${count}`);
         
         // Handle drop to "1" that happens right after registration
         const timeSinceRegister = Date.now() - registerTimeRef.current;
         if (count === 1 && preRegisterCount && preRegisterCount > 1 && timeSinceRegister < 2000) {
+          console.log(`Ignoring temporary drop to 1 right after registration (previous: ${preRegisterCount})`);
           return;
         }
         
         // Immediately after registration, if we had a higher count before, prefer it
         if (!stableCountAchievedRef.current && preRegisterCount && preRegisterCount > count) {
+          console.log(`Using previous count ${preRegisterCount} over new ${count} during stabilization`);
           scheduleCountUpdate(preRegisterCount);
         } else {
           // Schedule the update (debounced)
@@ -400,6 +411,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
       // Set up a fallback in case Firebase subscription doesn't fire
       setTimeout(async () => {
         if (isLoading || !callbackExecutedRef.current) {
+          console.log('Firebase subscription timeout, using fallback');
           
           // Try once more to get count
           const fallbackCount = await fetchLatestCount();
@@ -454,11 +466,13 @@ export function ListenerCount({ className }: ListenerCountProps) {
     }
     
     countStabilityTimerRef.current = setTimeout(async () => {
+      console.log('Count stability timeout reached, accepting current count as stable');
       
       // Before finalizing, check one more time to make sure we have the accurate count
       const verifiedCount = await fetchLatestCount();
       if (verifiedCount !== null && verifiedCount > 1 && 
           (currentCountRef.current === null || verifiedCount > currentCountRef.current)) {
+        console.log(`Final verification: count is ${verifiedCount}, updating display`);
         scheduleCountUpdate(verifiedCount, true);
       }
       
@@ -495,8 +509,10 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const scheduleStabilityCheck = () => {
     setTimeout(async () => {
       if (currentCountRef.current && currentCountRef.current === 1) {
+        console.log('Verifying suspiciously low count with direct fetch');
         const correctCount = await fetchLatestCount();
         if (correctCount !== null && correctCount > currentCountRef.current) {
+          console.log(`Count verification: actual count is ${correctCount}, updating from ${currentCountRef.current}`);
           scheduleCountUpdate(correctCount, true);
         }
       }
@@ -544,6 +560,8 @@ export function ListenerCount({ className }: ListenerCountProps) {
     // Set maximum loading time
     maxLoadingTimeRef.current = setTimeout(() => {
       if (isLoading) {
+        console.warn('Maximum loading time reached, forcing badge to show');
+        
         // Get any available count or use 1
         const count = currentCountRef.current ?? 1;
         scheduleCountUpdate(count, true);

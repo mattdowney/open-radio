@@ -35,10 +35,7 @@ export function RadioPlayer() {
       
       try {
         setLoading(true);
-        console.log('Fetching playlist...');
-        
         const videoIds = await youtubeService.fetchPlaylistItems(PLAYLIST_ID);
-        console.log(`Loaded ${videoIds.length} tracks`);
         
         setPlaylist(videoIds);
         
@@ -120,11 +117,14 @@ export function RadioPlayer() {
       const upcomingTracks: Track[] = nextTrackIds
         .map(id => {
           const validated = allValidatedTracks.find(vt => vt.id === id);
-          return validated ? {
-            id: validated.id,
-            title: validated.details.title,
-            albumCoverUrl: validated.details.albumCoverUrl,
-          } : null;
+          if (validated) {
+            return {
+              id: validated.id,
+              title: validated.details.title,
+              albumCoverUrl: validated.details.albumCoverUrl,
+            } as Track;
+          }
+          return null;
         })
         .filter((track): track is Track => track !== null);
 
@@ -181,7 +181,9 @@ export function RadioPlayer() {
 
   // Handle track end (auto-advance)
   const handleTrackEnd = useCallback(async () => {
-    if (queueState.isTransitioning) return;
+    if (queueState.isTransitioning) {
+      return;
+    }
 
     try {
       const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
@@ -189,12 +191,13 @@ export function RadioPlayer() {
       
       if (nextTrackId) {
         await handleTrackTransition(nextTrackId);
+        // The YouTubePlayerManager will handle auto-playing
       }
     } catch (error) {
       console.error('Error advancing to next track:', error);
       setError('Failed to advance to next track');
     }
-  }, [queueState.isTransitioning, queueState.currentTrackIndex, queueState.playlist, handleTrackTransition]);
+  }, [queueState.isTransitioning, queueState.currentTrackIndex, queueState.playlist, handleTrackTransition, setError]);
 
   // Player control handlers
   const handleNext = useCallback(() => {

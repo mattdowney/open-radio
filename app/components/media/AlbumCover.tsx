@@ -38,23 +38,7 @@ export function AlbumCover({
   isLoading = false,
 }: AlbumCoverProps) {
   const [imageLoading, setImageLoading] = useState(true);
-  const [blurDataURL, setBlurDataURL] = useState<string | null>(null);
   const imageSize = sizes[size];
-
-  useEffect(() => {
-    if (src) {
-      // Generate blur placeholder
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        canvas.width = 8;
-        canvas.height = 8;
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, 8, 8);
-        setBlurDataURL(canvas.toDataURL());
-      }
-    }
-  }, [src]);
 
   // If in loading state or no src, show skeleton
   if (isLoading || !src) {
@@ -84,15 +68,6 @@ export function AlbumCover({
         transform: 'translateZ(0)',
       }}
     >
-      {blurDataURL && (
-        <Image
-          src={blurDataURL}
-          alt=""
-          fill
-          className="absolute inset-0 scale-110 blur-xl rounded-[inherit]"
-          aria-hidden="true"
-        />
-      )}
       <Image
         src={src}
         alt={alt}
@@ -102,14 +77,14 @@ export function AlbumCover({
           'object-cover rounded-[inherit]',
           'transition-all duration-300 ease-in-out',
           imageLoading
-            ? 'scale-[105%] blur-sm opacity-0'
-            : 'scale-[102%] blur-0 opacity-100',
+            ? 'scale-[105%] opacity-0'
+            : 'scale-[102%] opacity-100',
         )}
         style={{
           willChange: 'transform, opacity, filter',
           backfaceVisibility: 'hidden',
         }}
-        onLoadingComplete={() => {
+        onLoad={() => {
           setImageLoading(false);
           // Preload next quality if available
           if (src.includes('high')) {
@@ -117,6 +92,7 @@ export function AlbumCover({
             preloadImage(maxResSrc);
           }
         }}
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         priority={priority}
         quality={size === 'lg' ? 90 : 75}
       />

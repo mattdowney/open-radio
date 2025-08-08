@@ -221,8 +221,17 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       }
     },
     fixPermissionIssue: () => {
-      // Firebase permission fix instructions available
-      // See: https://firebase.google.com/docs/database/security
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "listeners": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}
+      `);
     },
     getRegisteredClientId: () => registeredClientId,
     isPermissionDenied: () => permissionsDenied,
@@ -260,6 +269,16 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       };
     }
   };
+  
+    '🔧 Firebase debug utils available in console:\n' +
+    '- window.__firebaseDebug.clearAllListeners() - Resets all listeners and registers just this tab\n' +
+    '- window.__firebaseDebug.logListeners() - Shows details of all current listeners\n' +
+    '- window.__firebaseDebug.forceHeartbeat() - Forces a timestamp update for this tab\n' +
+    '- window.__firebaseDebug.checkActiveCount() - Directly checks how many active listeners exist\n' + 
+    '- window.__firebaseDebug.testListenerEvent() - Tests if Firebase events are working\n' +
+    '- window.__firebaseDebug.checkFirebaseStatus() - Checks Firebase initialization status\n' +
+    '- window.__firebaseDebug.fixPermissionIssue() - Shows how to fix permission errors'
+  );
 }
 
 // In development mode, force cleanup ALL entries older than 2 minutes

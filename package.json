@@ -16,6 +16,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "firebase": "^11.5.0",
+    "framer-motion": "^12.23.12",
     "gl-react": "^5.2.0",
     "gl-react-dom": "^5.2.1",
     "lodash": "^4.17.21",

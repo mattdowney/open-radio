@@ -31,7 +31,6 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
         // Define callback before loading script
         window.onYouTubeIframeAPIReady = () => {
-          console.log('YouTube IFrame API Ready');
           resolve();
         };
 
@@ -59,7 +58,6 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     }
 
     const initializePlayer = () => {
-      console.log('Initializing YouTube player');
       try {
         initializingRef.current = true;
 
@@ -127,9 +125,40 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     }
   }, [playerState.isPlayerReady, playerState.volume, playerRef]);
 
-  const handlePlayerReady = (event: { target: YouTubePlayer }) => {
-    console.log('Player ready event fired');
+  // Handle visibility changes to prevent DevTools from pausing playback
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // If tab becomes visible and we should be playing, resume
+      if (!document.hidden && playerState.isPlaying && playerRef.current) {
+        const playerStateCheck = playerRef.current.getPlayerState();
+        // If player is paused but should be playing, resume
+        if (playerStateCheck === PlayerState.PAUSED) {
+          playerRef.current.playVideo();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
+    // Also listen for focus events which can be triggered by DevTools
+    const handleFocus = () => {
+      if (playerState.isPlaying && playerRef.current) {
+        const playerStateCheck = playerRef.current.getPlayerState();
+        if (playerStateCheck === PlayerState.PAUSED) {
+          playerRef.current.playVideo();
+        }
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [playerState.isPlaying, playerRef]);
+
+  const handlePlayerReady = (event: { target: YouTubePlayer }) => {
     if (typeof event.target.loadVideoById !== 'function') {
       console.error('Player missing required methods');
       setError('Failed to initialize video player properly');
@@ -154,7 +183,6 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
     // If it's a video-specific error, try playing the next track
     if ([100, 101, 150].includes(event.data)) {
-      console.log('Video error, attempting to skip to next track');
       onTrackEnd();
       return;
     }
@@ -164,35 +192,42 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
   };
 
   const handlePlayerStateChange = (event: { target: YouTubePlayer; data: number }) => {
-    const playerState = event.data;
-    console.log('Player state changed to:', playerState);
+    const playerStateValue = event.data;
 
-    switch (playerState) {
+    switch (playerStateValue) {
       case PlayerState.ENDED:
-        console.log('Track ended');
+        // Set auto-advancing flag before calling onTrackEnd
+        playerDispatch({ type: 'SET_AUTO_ADVANCING', payload: true });
         onTrackEnd();
         break;
 
       case PlayerState.PLAYING:
-        console.log('Track started playing');
         playerDispatch({ type: 'SET_PLAYING', payload: true });
+        // Clear auto-advancing flag once playing starts
+        playerDispatch({ type: 'SET_AUTO_ADVANCING', payload: false });
         break;
 
       case PlayerState.PAUSED:
-        console.log('Track paused');
-        playerDispatch({ type: 'SET_PLAYING', payload: false });
+        // Check if this pause was triggered by DevTools/focus loss
+        // If the player should be playing and we have user interaction, resume
+        if (playerState.hasUserInteracted && !document.hidden) {
+          setTimeout(() => {
+            if (playerRef.current && playerState.isPlaying) {
+              playerRef.current.playVideo();
+            }
+          }, 100);
+        } else {
+          playerDispatch({ type: 'SET_PLAYING', payload: false });
+        }
         break;
 
       case PlayerState.BUFFERING:
-        console.log('Track buffering');
         break;
 
       case PlayerState.UNSTARTED:
-        console.log('Player unstarted');
         break;
 
       default:
-        console.log('Unhandled player state:', playerState);
         break;
     }
   };
@@ -206,9 +241,23 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     const loadVideo = () => {
       const currentVideoId = queueState.playlist[queueState.currentTrackIndex];
       if (currentVideoId && currentVideoId !== playerState.currentVideoId) {
-        console.log('Loading video:', currentVideoId);
+        // Check if we should auto-play
+        // Auto-play if: currently playing, user has interacted, or we're auto-advancing
+        const shouldAutoPlay = playerState.isPlaying || playerState.hasUserInteracted || playerState.isAutoAdvancing;
+        
         playerRef.current?.loadVideoById(currentVideoId);
         playerDispatch({ type: 'SET_CURRENT_VIDEO', payload: currentVideoId });
+        
+        // Auto-play if we should continue playing
+        if (shouldAutoPlay) {
+          // Small delay to ensure video is loaded before playing
+          setTimeout(() => {
+            if (playerRef.current) {
+              playerRef.current.playVideo();
+              playerDispatch({ type: 'SET_PLAYING', payload: true });
+            }
+          }, 100);
+        }
       }
     };
 
@@ -219,9 +268,14 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     queueState.currentTrack,
     playerState.isPlayerReady,
     playerState.currentVideoId,
+    playerState.isPlaying,
+    playerState.hasUserInteracted,
+    playerState.isAutoAdvancing,
     playerRef,
     playerDispatch
   ]);
+
+
 
   // Cleanup on unmount
   useEffect(() => {

@@ -39,7 +39,7 @@ This is a Next.js 14+ online radio application using the App Router pattern. The
 - All contexts use `useReducer` for predictable state updates
 
 **Component Organization:**
-- `app/components/layout/` - Layout components (LeftPanel, RadioLayout)
+- `app/components/layout/` - Layout components (RadioLayout)
 - `app/components/media/` - Media player components (PlayerControls, VolumeControl, AlbumCover)  
 - `app/components/ui/` - Reusable UI components (Badge, BlurredAlbumBackground, ErrorBoundary)
 - `app/components/player/` - YouTube player management (YouTubePlayerManager)
