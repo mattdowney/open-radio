@@ -26,6 +26,28 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
   const { setError } = useUI();
   const initializingRef = useRef(false);
 
+  // Keep latest state/callbacks in refs to avoid stale closures in YT event handlers
+  const latestQueueStateRef = useRef(queueState);
+  const latestPlayerStateRef = useRef(playerState);
+  const onTrackEndRef = useRef(onTrackEnd);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    latestQueueStateRef.current = queueState;
+  }, [queueState]);
+
+  useEffect(() => {
+    latestPlayerStateRef.current = playerState;
+  }, [playerState]);
+
+  useEffect(() => {
+    onTrackEndRef.current = onTrackEnd;
+  }, [onTrackEnd]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
   // Load YouTube IFrame API
   useEffect(() => {
     const loadYouTubeAPI = async () => {
@@ -195,12 +217,12 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     if ([100, 101, 150].includes(event.data)) {
       // Ensure auto-advance logic knows to continue playing
       playerDispatch({ type: 'SET_AUTO_ADVANCING', payload: true });
-      onTrackEnd();
+      onTrackEndRef.current();
       return;
     }
 
     // For other errors, show the error message
-    onError(message);
+    onErrorRef.current(message);
   };
 
   const handlePlayerStateChange = (event: { target: YouTubePlayer; data: number }) => {
@@ -212,8 +234,9 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         playerDispatch({ type: 'SET_AUTO_ADVANCING', payload: true });
 
         try {
-          const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
-          const nextTrackId = queueState.playlist[nextIndex];
+          const currentQueue = latestQueueStateRef.current;
+          const nextIndex = (currentQueue.currentTrackIndex + 1) % currentQueue.playlist.length;
+          const nextTrackId = currentQueue.playlist[nextIndex];
           if (playerRef.current && nextTrackId) {
             playerRef.current.loadVideoById(nextTrackId);
             playerDispatch({ type: 'SET_CURRENT_VIDEO', payload: nextTrackId });
@@ -233,7 +256,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         } catch {}
 
         // Allow app state to update track details/indices
-        onTrackEnd();
+        onTrackEndRef.current();
         break;
 
       case PlayerState.PLAYING:
@@ -244,7 +267,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
       case PlayerState.PAUSED:
         // If we should be playing (user interacted OR auto-advancing) and tab visible, resume
-        if ((playerState.hasUserInteracted || playerState.isAutoAdvancing) && !document.hidden) {
+        if ((latestPlayerStateRef.current.hasUserInteracted || latestPlayerStateRef.current.isAutoAdvancing) && !document.hidden) {
           setTimeout(() => {
             if (playerRef.current) {
               try {
@@ -262,7 +285,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
       case PlayerState.CUED:
         // When a video is cued and we should continue playing, kick playback
-        if (playerRef.current && (playerState.isPlaying || playerState.hasUserInteracted || playerState.isAutoAdvancing)) {
+        if (playerRef.current && (latestPlayerStateRef.current.isPlaying || latestPlayerStateRef.current.hasUserInteracted || latestPlayerStateRef.current.isAutoAdvancing)) {
           setTimeout(() => {
             try {
               playerRef.current?.playVideo();
@@ -273,7 +296,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
       case PlayerState.UNSTARTED:
         // Occasionally gets stuck; if we intend to play, nudge it
-        if (playerRef.current && (playerState.isPlaying || playerState.hasUserInteracted || playerState.isAutoAdvancing)) {
+        if (playerRef.current && (latestPlayerStateRef.current.isPlaying || latestPlayerStateRef.current.hasUserInteracted || latestPlayerStateRef.current.isAutoAdvancing)) {
           setTimeout(() => {
             try {
               playerRef.current?.playVideo();

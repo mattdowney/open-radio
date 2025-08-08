@@ -1,15 +1,14 @@
 'use client';
 
+import type React from 'react';
 import { Track } from '../../types/track';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useUI } from '../../contexts/UIContext';
 import { ListenerCount } from '../media/ListenerCount';
 import { VinylRecord } from '../media/VinylRecord';
 import { TrackRating } from '../media/TrackRating';
-import { AlbumCover } from '../media/AlbumCover';
 import BlurredAlbumBackground from '../ui/BlurredAlbumBackground';
 import Loading from '../ui/Loading';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   BackwardIcon,
   ForwardIcon,
@@ -50,28 +49,22 @@ export function RadioLayout({
   onTrackSelect,
 }: RadioLayoutProps) {
   const { setVolume, muteToggle } = usePlayer();
-  const { handleImageLoad } = useUI();
+  useUI();
 
-  const handleVolumeChange = (event: { target: { value: string } }) => {
+  const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = Number(event.target.value);
     setVolume(newVolume);
   };
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-black">
-      {/* Loading State */}
       {isLoading && <Loading />}
-
-      {/* Only show the rest of the UI when not in initial loading state */}
       {!isLoading && (
         <>
-          {/* Content Layer - Positioned relative on top of background */}
           <div className="relative z-10 h-screen w-screen pointer-events-auto">
             {isUIReady && currentTrack && (
               <>
-                {/* Top Bar - Logo and Listener Count */}
                 <div className="absolute top-8 left-4 right-4 md:top-7 lg:top-9 xl:left-7 xl:right-7 z-30 flex justify-between items-start">
-                  {/* Logo */}
                   <a href="https://mattdowney.com/">
                     <svg
                       className="w-16 lg:w-[4.75rem] h-auto text-white"
@@ -89,15 +82,11 @@ export function RadioLayout({
                       />
                     </svg>
                   </a>
-                  
-                  {/* Listener Count */}
                   <ListenerCount />
                 </div>
 
-                {/* Centered Album Art */}
                 <div className="relative h-full flex items-center justify-center p-4 md:p-8 md:pb-24 pb-40">
                   <div className="w-full max-w-sm md:max-w-md">
-                    {/* Album Art - Vinyl Record */}
                     <VinylRecord
                       src={currentTrack.albumCoverUrl}
                       alt={currentTrack.title}
@@ -105,30 +94,26 @@ export function RadioLayout({
                       isLoading={isLoadingNext}
                       className="w-full h-auto drop-shadow-2xl"
                     />
-                    
-                    {/* Mobile Track Info - Below album art */}
-                    <div className="md:hidden mt-6">
-                      <div className="flex flex-col items-center">
-                        <div className="text-white text-base font-medium text-center px-4">
-                          {currentTrack.title}
-                        </div>
-                        {currentTrack.id && (
-                          <TrackRating
-                            trackId={currentTrack.id}
-                            className="mt-3 scale-125"
-                            isLoading={isLoadingNext}
-                          />
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </div>
 
-                {/* Mobile Controls - Fixed at bottom */}
+                {/* Mobile bottom controls */}
                 <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/40 backdrop-blur-lg pb-8 pt-6 px-6">
                   <div className="space-y-6">
-                    {/* Playback Controls */}
-                    <div className="flex items-center justify-center gap-6">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-white text-lg font-medium text-center px-2 truncate max-w-[80vw]">
+                        {currentTrack.title}
+                      </div>
+                      {currentTrack.id && (
+                        <TrackRating
+                          trackId={currentTrack.id}
+                          className="scale-125"
+                          isLoading={isLoadingNext}
+                        />
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-center gap-6 mt-6">
                       <button
                         onClick={onPrevious}
                         className={cn(
@@ -164,7 +149,6 @@ export function RadioLayout({
                       </button>
                     </div>
 
-                    {/* Volume Control */}
                     <div className="flex items-center justify-center gap-3 px-8">
                       <button
                         onClick={muteToggle}
@@ -183,7 +167,7 @@ export function RadioLayout({
                         max="100"
                         value={volume}
                         onChange={handleVolumeChange}
-                        className="volume-slider flex-1 rounded-full focus:outline-none"
+                        className="volume-slider w-40 rounded-full focus:outline-none"
                         style={{
                           '--volume-percentage': `${volume}%`,
                         } as React.CSSProperties}
@@ -191,10 +175,9 @@ export function RadioLayout({
                     </div>
                   </div>
                 </div>
-                
-                {/* Desktop Bottom UI Bar with truly seamless gradient fade */}
+
+                {/* Desktop bottom bar (no upcoming tracks) */}
                 <div className="hidden md:block absolute bottom-0 left-0 right-0 z-20" style={{ height: '60%' }}>
-                  {/* Very gradual blur fade from top to bottom */}
                   <div 
                     className="absolute inset-0 bg-black/25 backdrop-blur-md"
                     style={{
@@ -202,141 +185,92 @@ export function RadioLayout({
                       WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.02) 20%, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.8) 80%, rgba(0,0,0,0.95) 90%, black 95%, black 100%)',
                     }}
                   />
-                  
-                  {/* Controls positioned at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 h-28">
-                    <div className="flex items-center justify-between h-full px-6">
-                    {/* Current Track Info */}
-                    <div className="flex flex-col justify-center flex-1 min-w-0">
-                      <div className="truncate text-white text-sm">
-                        {currentTrack.title}
-                      </div>
-                      {currentTrack.id && (
-                        <TrackRating
-                          trackId={currentTrack.id}
-                          className="flex-shrink-0 mt-2"
-                          isLoading={isLoadingNext}
-                        />
-                      )}
-                    </div>
 
-                    {/* Playback Controls and Volume - Stacked */}
-                    <div className="flex flex-col items-center gap-3">
-                      {/* Playback Controls */}
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={onPrevious}
-                          className={cn(
-                            'text-white hover:text-white/75 transition-colors focus:outline-none',
-                            isLoadingNext && 'opacity-50 cursor-not-allowed'
+                  <div className="absolute bottom-0 left-0 right-0 h-40">
+                    <div className="flex items-center justify-center h-full px-6">
+                      <div className="flex flex-col items-center gap-3 w-full max-w-3xl">
+                        <div className="flex flex-col items-center gap-2.5">
+                          <div className="truncate text-white text-base/80 max-w-[60vw] text-center">
+                            {currentTrack.title}
+                          </div>
+                          {currentTrack.id && (
+                            <TrackRating
+                              trackId={currentTrack.id}
+                              className="flex-shrink-0"
+                              isLoading={isLoadingNext}
+                            />
                           )}
-                          disabled={isLoadingNext}
-                          aria-label="Previous track"
-                        >
-                          <BackwardIcon className="w-4 h-4" />
-                        </button>
+                        </div>
 
-                        <button
-                          onClick={onPlayPause}
-                          className="text-white hover:text-white/75 transition-colors focus:outline-none"
-                          disabled={isLoadingNext}
-                          aria-label={isPlaying ? 'Pause' : 'Play'}
-                        >
-                          {isPlaying ? (
-                            <PauseIcon className="w-5 h-5" />
-                          ) : (
-                            <PlayIcon className="w-5 h-5" />
-                          )}
-                        </button>
+                        <div className="flex items-center justify-center gap-4 w-full mt-4">
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              onClick={onPrevious}
+                              className={cn(
+                                'text-white hover:text-white/75 transition-colors focus:outline-none',
+                                isLoadingNext && 'opacity-50 cursor-not-allowed'
+                              )}
+                              disabled={isLoadingNext}
+                              aria-label="Previous track"
+                            >
+                              <BackwardIcon className="w-3.5 h-3.5" />
+                            </button>
 
-                        <button
-                          onClick={onNext}
-                          className="text-white hover:text-white/75 transition-colors focus:outline-none"
-                          disabled={isLoadingNext}
-                          aria-label="Next track"
-                        >
-                          <ForwardIcon className="w-4 h-4" />
-                        </button>
-                      </div>
+                            <button
+                              onClick={onPlayPause}
+                              className="text-white hover:text-white/75 transition-colors focus:outline-none"
+                              disabled={isLoadingNext}
+                              aria-label={isPlaying ? 'Pause' : 'Play'}
+                            >
+                              {isPlaying ? (
+                                <PauseIcon className="w-5 h-5" />
+                              ) : (
+                                <PlayIcon className="w-5 h-5" />
+                              )}
+                            </button>
 
-                      {/* Volume Controls */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={muteToggle}
-                          className="text-white hover:text-white/75 transition-colors focus:outline-none"
-                          aria-label={volume === 0 ? 'Unmute' : 'Mute'}
-                        >
-                          {volume === 0 ? (
-                            <SpeakerXMarkIcon className="w-4 h-4" />
-                          ) : (
-                            <SpeakerWaveIcon className="w-4 h-4" />
-                          )}
-                        </button>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={volume}
-                          onChange={handleVolumeChange}
-                          className="volume-slider w-24 rounded-full focus:outline-none"
-                          style={{
-                            '--volume-percentage': `${volume}%`,
-                          } as React.CSSProperties}
-                        />
-                      </div>
-                    </div>
+                            <button
+                              onClick={onNext}
+                              className="text-white hover:text-white/75 transition-colors focus:outline-none"
+                              disabled={isLoadingNext}
+                              aria-label="Next track"
+                            >
+                              <ForwardIcon className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
 
-                    {/* Upcoming Tracks */}
-                    <div className="flex items-center justify-end flex-1 min-w-0">
-                      <div className="flex items-center gap-6">
-                        <div className="relative flex items-center gap-6 min-w-0">
-                          {/* First upcoming track - fully visible */}
-                          {upcomingTracks[0] && (
-                            <div className="flex items-center gap-2 min-w-0">
-                              <AlbumCover
-                                src={upcomingTracks[0].albumCoverUrl}
-                                alt={upcomingTracks[0].title}
-                                size="sm"
-                                className="w-10 h-10 flex-shrink-0"
-                              />
-                              <span className="text-white text-sm max-w-[150px] truncate">
-                                {upcomingTracks[0].title}
-                              </span>
-                            </div>
-                          )}
-                          
-                          {/* Second upcoming track - minimal tease with mask */}
-                          {upcomingTracks[1] && (
-                            <div className="relative w-32 overflow-hidden">
-                              <div 
-                                className="flex items-center gap-2 min-w-0"
-                                style={{
-                                  maskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 30%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 85%)',
-                                  WebkitMaskImage: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 30%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 85%)',
-                                }}
-                              >
-                                <AlbumCover
-                                  src={upcomingTracks[1].albumCoverUrl}
-                                  alt={upcomingTracks[1].title}
-                                  size="sm"
-                                  className="w-10 h-10 flex-shrink-0 opacity-60"
-                                />
-                                <span className="text-white/60 text-sm whitespace-nowrap">
-                                  {upcomingTracks[1].title}
-                                </span>
-                              </div>
-                            </div>
-                          )}
+                        {/* Volume slider below controls */}
+                        <div className="flex items-center justify-center gap-2.5 mb-8 mt-1">
+                          <button
+                            onClick={muteToggle}
+                            className="text-white hover:text-white/75 transition-colors focus:outline-none"
+                            aria-label={volume === 0 ? 'Unmute' : 'Mute'}
+                          >
+                            {volume === 0 ? (
+                              <SpeakerXMarkIcon className="w-4 h-4" />
+                            ) : (
+                              <SpeakerWaveIcon className="w-4 h-4" />
+                            )}
+                          </button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={volume}
+                            onChange={handleVolumeChange}
+                            className="volume-slider w-48 rounded-full focus:outline-none"
+                            style={{
+                              '--volume-percentage': `${volume}%`,
+                            } as React.CSSProperties}
+                          />
                         </div>
                       </div>
                     </div>
                   </div>
-                  </div>
                 </div>
-                
-                {/* Background - Full screen */}
+
                 <div className="absolute inset-0 -z-10 overflow-hidden bg-black">
-                  {/* Blurred album art background */}
                   <BlurredAlbumBackground 
                     className="absolute inset-0" 
                     albumCoverUrl={currentTrack?.albumCoverUrl}
@@ -346,7 +280,6 @@ export function RadioLayout({
               </>
             )}
 
-            {/* Error Display */}
             {error && (
               <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 text-white bg-red-500/20 backdrop-blur-lg p-6 rounded-lg border border-red-500/20">
                 <h2 className="text-xl font-semibold mb-2">Error</h2>

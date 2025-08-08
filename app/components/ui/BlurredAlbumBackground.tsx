@@ -75,7 +75,7 @@ const BlurredAlbumBackground = ({
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
               style={{
-                transform: 'scale(1.2)',
+                transform: 'scale(1.4)',
                 willChange: 'transform',
               }}
             />
