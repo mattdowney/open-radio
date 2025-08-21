@@ -46,7 +46,7 @@ export function VinylRecord({
         <div className={cn(
           "absolute inset-0",
           isPlaying && !isLoading && 'animate-spin-slow'
-        )}>
+        )} style={{ willChange: 'transform' }}>
           
         
         {/* Subtle vinyl surface shading */}
