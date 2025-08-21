@@ -1,6 +1,7 @@
 'use client';
 
 import type React from 'react';
+import { useState, useEffect } from 'react';
 import { Track } from '../../types/track';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useUI } from '../../contexts/UIContext';
@@ -18,6 +19,8 @@ import {
   SpeakerXMarkIcon,
 } from '@heroicons/react/20/solid';
 import { cn } from '../../lib/utils';
+import { MeshGradient } from '@paper-design/shaders-react';
+import { extractColorsFromImage, generateShaderColors } from '../../utils/colorExtraction';
 
 interface RadioLayoutProps {
   isLoading: boolean;
@@ -28,6 +31,7 @@ interface RadioLayoutProps {
   volume: number;
   isLoadingNext: boolean;
   isUIReady: boolean;
+  isTransitioning: boolean;
   onPlayPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -43,6 +47,7 @@ export function RadioLayout({
   volume,
   isLoadingNext,
   isUIReady,
+  isTransitioning,
   onPlayPause,
   onNext,
   onPrevious,
@@ -50,6 +55,38 @@ export function RadioLayout({
 }: RadioLayoutProps) {
   const { setVolume, muteToggle } = usePlayer();
   useUI();
+  
+  const [shaderColors, setShaderColors] = useState<string[]>(["#000000", "#1a1a1a", "#333333", "#ffffff"]);
+  const [pendingColorExtraction, setPendingColorExtraction] = useState<string | null>(null);
+
+  // Delayed color extraction - only after track is playing and not transitioning
+  useEffect(() => {
+    if (currentTrack?.albumCoverUrl && isPlaying && !isTransitioning) {
+      // Mark this URL as pending extraction
+      if (pendingColorExtraction !== currentTrack.albumCoverUrl) {
+        setPendingColorExtraction(currentTrack.albumCoverUrl);
+        
+        // Add delay to ensure smooth initial transition
+        const timeoutId = setTimeout(() => {
+          extractColorsFromImage(currentTrack.albumCoverUrl!)
+            .then((extractedColors) => {
+              const dynamicColors = generateShaderColors(extractedColors);
+              setShaderColors(dynamicColors);
+              setPendingColorExtraction(null);
+            })
+            .catch((error) => {
+              console.warn('Color extraction failed:', error);
+              // Keep current colors instead of resetting to defaults
+              setPendingColorExtraction(null);
+            });
+        }, 2000); // 2s delay to allow initial play transition to fully settle
+
+        return () => {
+          clearTimeout(timeoutId);
+        };
+      }
+    }
+  }, [currentTrack?.albumCoverUrl, isPlaying, isTransitioning, pendingColorExtraction]);
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = Number(event.target.value);
@@ -272,10 +309,19 @@ export function RadioLayout({
 
                 <div className="absolute inset-0 -z-10 overflow-hidden bg-black">
                   <BlurredAlbumBackground 
-                    className="absolute inset-0" 
+                    className="absolute inset-0 z-0" 
                     albumCoverUrl={currentTrack?.albumCoverUrl}
                     blurAmount={60}
+                    isTrackReady={isPlaying && !isTransitioning}
+                    shouldFadeToBlack={isTransitioning}
                   />
+                  <div className="absolute inset-0 z-10 mix-blend-overlay">
+                    <MeshGradient
+                      className="w-full h-full"
+                      colors={shaderColors}
+                      speed={0.8}
+                    />
+                  </div>
                 </div>
               </>
             )}

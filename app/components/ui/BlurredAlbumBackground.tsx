@@ -9,6 +9,8 @@ interface BlurredAlbumBackgroundProps {
   blurAmount?: number;
   transitionDuration?: number;
   animate?: boolean;
+  isTrackReady?: boolean;
+  shouldFadeToBlack?: boolean;
 }
 
 const BlurredAlbumBackground = ({ 
@@ -16,19 +18,50 @@ const BlurredAlbumBackground = ({
   albumCoverUrl,
   blurAmount = 24,
   transitionDuration = 0.8,
-  animate = true
+  animate = true,
+  isTrackReady = true,
+  shouldFadeToBlack = false
 }: BlurredAlbumBackgroundProps) => {
-  const [currentUrl, setCurrentUrl] = useState(albumCoverUrl);
+  const [displayUrl, setDisplayUrl] = useState(albumCoverUrl);
+  const [showBlack, setShowBlack] = useState(false);
 
-  // Handle URL changes with smooth transition
+  // Immediately fade to black when shouldFadeToBlack is true
   useEffect(() => {
-    if (albumCoverUrl !== currentUrl) {
-      setCurrentUrl(albumCoverUrl);
+    if (shouldFadeToBlack) {
+      setShowBlack(true);
+      setDisplayUrl(undefined);
     }
-  }, [albumCoverUrl, currentUrl]);
+  }, [shouldFadeToBlack]);
+
+  // Show new artwork when track is ready and we're not in fade-to-black mode
+  useEffect(() => {
+    if (!shouldFadeToBlack && isTrackReady && albumCoverUrl) {
+      setShowBlack(false);
+      setDisplayUrl(albumCoverUrl);
+    }
+  }, [shouldFadeToBlack, isTrackReady, albumCoverUrl]);
+
+  // Initialize display URL when first mounting
+  useEffect(() => {
+    if (!displayUrl && !showBlack && albumCoverUrl && isTrackReady) {
+      setDisplayUrl(albumCoverUrl);
+    }
+  }, [albumCoverUrl, displayUrl, showBlack, isTrackReady]);
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className || ''}`}>
+      {/* Custom keyframe animation for scale + rotate */}
+      <style jsx>{`
+        @keyframes scaleAndSpin {
+          from {
+            transform: scale(2) rotate(0deg);
+          }
+          to {
+            transform: scale(2) rotate(360deg);
+          }
+        }
+      `}</style>
+      
       {/* SVG Filter Definition for Noise */}
       <svg className="absolute w-0 h-0" aria-hidden="true">
         <defs>
@@ -54,12 +87,24 @@ const BlurredAlbumBackground = ({
       
       {/* Album cover as background with blur - simplified animation */}
       <AnimatePresence mode="wait">
-        {currentUrl && (
+        {showBlack ? (
           <motion.div
-            key={currentUrl}
+            key="black"
+            className="absolute inset-0 w-full h-full bg-black"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ 
+              duration: 0.3,
+              ease: "easeInOut"
+            }}
+          />
+        ) : displayUrl ? (
+          <motion.div
+            key={displayUrl}
             className="absolute inset-0 w-full h-full"
             style={{
-              filter: `blur(${blurAmount}px)`,
+              filter: `blur(${blurAmount}px) brightness(1.4) saturate(1.3)`,
               willChange: 'opacity',
             }}
             initial={{ opacity: 0 }}
@@ -71,16 +116,16 @@ const BlurredAlbumBackground = ({
             }}
           >
             <img
-              src={currentUrl}
+              src={displayUrl}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
               style={{
-                transform: 'scale(1.4)',
+                animation: 'scaleAndSpin 60s linear infinite',
                 willChange: 'transform',
               }}
             />
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
       
       {/* Noise overlay to prevent banding */}
