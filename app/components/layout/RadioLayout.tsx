@@ -322,6 +322,19 @@ export function RadioLayout({
                       speed={0.8}
                     />
                   </div>
+                  
+                  {/* Static dither grain overlay */}
+                  <div 
+                    className="absolute inset-0 z-20 pointer-events-none opacity-[0.15] mix-blend-overlay"
+                    style={{
+                      backgroundImage: `
+                        radial-gradient(circle at 1px 1px, rgba(255,255,255,1) 1px, transparent 0),
+                        radial-gradient(circle at 2px 3px, rgba(0,0,0,0.8) 1px, transparent 0)
+                      `,
+                      backgroundSize: '3px 3px, 5px 5px',
+                      backgroundPosition: '0 0, 1px 2px'
+                    }}
+                  />
                 </div>
               </>
             )}

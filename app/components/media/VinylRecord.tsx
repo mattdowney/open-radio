@@ -104,7 +104,7 @@ export function VinylRecord({
         />
         
         {/* Center label with album artwork */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[38%] h-[38%] rounded-full overflow-hidden bg-black shadow-inner">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[41%] h-[41%] rounded-full overflow-hidden bg-black shadow-inner">
           {/* Album cover as the label */}
           <div className="relative w-full h-full">
             <Image
