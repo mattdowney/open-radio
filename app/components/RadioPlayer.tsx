@@ -253,6 +253,7 @@ export function RadioPlayer() {
         volume={playerState.volume}
         isLoadingNext={queueState.isLoadingNext}
         isUIReady={uiState.isUIReady}
+        isTransitioning={queueState.isTransitioning}
         onPlayPause={togglePlayback}
         onNext={handleNext}
         onPrevious={handlePrevious}

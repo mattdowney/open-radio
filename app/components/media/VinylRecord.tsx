@@ -41,7 +41,7 @@ export function VinylRecord({
       )}
     >
       {/* Main vinyl record container */}
-      <div className="relative w-full h-full rounded-full overflow-hidden bg-black/85 shadow-2xl" style={{ isolation: 'isolate' }}>
+      <div className="relative w-full h-full rounded-full overflow-hidden bg-black shadow-2xl" style={{ isolation: 'isolate' }}>
         {/* Spinning content */}
         <div className={cn(
           "absolute inset-0",
