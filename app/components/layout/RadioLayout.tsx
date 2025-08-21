@@ -324,6 +324,7 @@ export function RadioLayout({
                   </div>
                   
                   {/* Static dither grain overlay */}
+                  {/*
                   <div 
                     className="absolute inset-0 z-20 pointer-events-none opacity-[0.15] mix-blend-overlay"
                     style={{
@@ -335,6 +336,7 @@ export function RadioLayout({
                       backgroundPosition: '0 0, 1px 2px'
                     }}
                   />
+                  */}
                 </div>
               </>
             )}
