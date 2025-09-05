@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useReducer, useRef, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useRef,
+  ReactNode,
+} from 'react';
 import { YouTubePlayer } from '../types/player';
 
 export interface PlayerState {
@@ -60,7 +66,10 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
     case 'SET_AUTO_ADVANCING':
       return { ...state, isAutoAdvancing: action.payload };
     case 'RESET_PLAYER':
-      return { ...initialPlayerState, hasUserInteracted: state.hasUserInteracted };
+      return {
+        ...initialPlayerState,
+        hasUserInteracted: state.hasUserInteracted,
+      };
     default:
       return state;
   }
@@ -146,9 +155,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PlayerContext.Provider value={value}>
-      {children}
-    </PlayerContext.Provider>
+    <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
   );
 }
 

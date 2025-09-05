@@ -37,31 +37,31 @@ function uiReducer(state: UIState, action: UIAction): UIState {
   switch (action.type) {
     case 'SET_INITIAL_LOAD':
       return { ...state, isInitialLoad: action.payload };
-    
+
     case 'SET_CONTENT_VISIBLE':
       return { ...state, isContentVisible: action.payload };
-    
+
     case 'SET_UI_READY':
       return { ...state, isUIReady: action.payload };
-    
+
     case 'SET_IMAGE_LOADED':
       return { ...state, imageLoaded: action.payload };
-    
+
     case 'SET_TRACK_LOADED':
       return { ...state, isTrackLoaded: action.payload };
-    
+
     case 'SET_ERROR':
       return { ...state, error: action.payload };
-    
+
     case 'CLEAR_ERROR':
       return { ...state, error: null };
-    
+
     case 'SET_INITIAL_PLAY':
       return { ...state, isInitialPlay: action.payload };
-    
+
     case 'RESET_UI':
       return { ...initialUIState };
-    
+
     default:
       return state;
   }
@@ -128,11 +128,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
     handleTrackLoad,
   };
 
-  return (
-    <UIContext.Provider value={value}>
-      {children}
-    </UIContext.Provider>
-  );
+  return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
 }
 
 export function useUI() {

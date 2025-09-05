@@ -8,19 +8,17 @@ interface BlurredAlbumBackgroundProps {
   albumCoverUrl?: string;
   blurAmount?: number;
   transitionDuration?: number;
-  animate?: boolean;
   isTrackReady?: boolean;
   shouldFadeToBlack?: boolean;
 }
 
-const BlurredAlbumBackground = ({ 
-  className, 
+const BlurredAlbumBackground = ({
+  className,
   albumCoverUrl,
   blurAmount = 24,
   transitionDuration = 0.8,
-  animate = true,
   isTrackReady = true,
-  shouldFadeToBlack = false
+  shouldFadeToBlack = false,
 }: BlurredAlbumBackgroundProps) => {
   const [displayUrl, setDisplayUrl] = useState(albumCoverUrl);
   const [showBlack, setShowBlack] = useState(false);
@@ -49,7 +47,9 @@ const BlurredAlbumBackground = ({
   }, [albumCoverUrl, displayUrl, showBlack, isTrackReady]);
 
   return (
-    <div className={`relative w-full h-full overflow-hidden ${className || ''}`}>
+    <div
+      className={`relative w-full h-full overflow-hidden ${className || ''}`}
+    >
       {/* Custom keyframe animation for scale + rotate */}
       <style jsx>{`
         @keyframes scaleAndSpin {
@@ -61,30 +61,33 @@ const BlurredAlbumBackground = ({
           }
         }
       `}</style>
-      
+
       {/* SVG Filter Definition for Noise */}
       <svg className="absolute w-0 h-0" aria-hidden="true">
         <defs>
           <filter id="album-noise-filter">
-            <feTurbulence 
-              type="fractalNoise" 
-              baseFrequency="0.9" 
-              numOctaves="4" 
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.9"
+              numOctaves="4"
               seed="15"
             />
-            <feColorMatrix type="saturate" values="0"/>
+            <feColorMatrix type="saturate" values="0" />
             <feComponentTransfer>
-              <feFuncA type="discrete" tableValues="0 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 1"/>
+              <feFuncA
+                type="discrete"
+                tableValues="0 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 1"
+              />
             </feComponentTransfer>
-            <feGaussianBlur stdDeviation="0.5"/>
-            <feComposite operator="over"/>
+            <feGaussianBlur stdDeviation="0.5" />
+            <feComposite operator="over" />
           </filter>
         </defs>
       </svg>
 
       {/* Fallback dark background */}
       <div className="absolute inset-0 bg-black" />
-      
+
       {/* Album cover as background with blur - simplified animation */}
       <AnimatePresence mode="wait">
         {showBlack ? (
@@ -94,9 +97,9 @@ const BlurredAlbumBackground = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ 
+            transition={{
               duration: 0.3,
-              ease: "easeInOut"
+              ease: 'easeInOut',
             }}
           />
         ) : displayUrl ? (
@@ -110,9 +113,9 @@ const BlurredAlbumBackground = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ 
+            transition={{
               duration: transitionDuration,
-              ease: "easeInOut"
+              ease: 'easeInOut',
             }}
           >
             <img
@@ -127,9 +130,9 @@ const BlurredAlbumBackground = ({
           </motion.div>
         ) : null}
       </AnimatePresence>
-      
+
       {/* Noise overlay to prevent banding */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.025] mix-blend-screen pointer-events-none"
         style={{
           filter: 'url(#album-noise-filter)',
@@ -137,7 +140,7 @@ const BlurredAlbumBackground = ({
           willChange: 'auto',
         }}
       />
-      
+
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/50 pointer-events-none" />
     </div>

@@ -1,31 +1,30 @@
 import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from 'next';
+import { appConfig } from '../config/app';
 import './styles/globals.scss';
 
 export const metadata: Metadata = {
-  title: 'Matt Downey — Radio',
-  description: 'Lock in. Vibe out. Be productive.',
+  title: appConfig.name,
+  description: appConfig.description,
   openGraph: {
-    title: 'Matt Downey — Radio',
-    description: 'Lock in. Vibe out. Be productive.',
+    title: appConfig.name,
+    description: appConfig.description,
     type: 'website',
-    url: 'https://radio.mattdowney.com/',
+    url: appConfig.url,
     images: [
       {
-        url: 'https://cdn.shopify.com/s/files/1/0614/6565/7577/files/open-graph_d1c5e113-8f9d-41b3-bdbd-4df59c4793d5.jpg?v=1713496521',
+        url: process.env.NEXT_PUBLIC_OG_IMAGE_URL || '/og-image.png',
         width: 800,
         height: 600,
-        alt: 'MD Radio',
+        alt: appConfig.name,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Matt Downey — Radio',
-    description: 'Lock in. Vibe out. Be productive.',
-    images: [
-      'https://cdn.shopify.com/s/files/1/0614/6565/7577/files/twitter_74424e7e-a303-493e-87f7-7414932c44bf.jpg?v=1713496521',
-    ],
+    title: appConfig.name,
+    description: appConfig.description,
+    images: [process.env.NEXT_PUBLIC_TWITTER_IMAGE_URL || '/og-image.png'],
   },
 };
 
@@ -37,7 +36,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body>{children}</body>
-      <Analytics />
+      {appConfig.enableAnalytics && <Analytics />}
     </html>
   );
 }

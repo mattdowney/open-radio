@@ -45,79 +45,93 @@ function queueReducer(state: QueueState, action: QueueAction): QueueState {
   switch (action.type) {
     case 'SET_PLAYLIST':
       return { ...state, playlist: action.payload };
-    
+
     case 'SET_CURRENT_TRACK_INDEX':
       return { ...state, currentTrackIndex: action.payload };
-    
+
     case 'SET_CURRENT_TRACK':
       return { ...state, currentTrack: action.payload };
-    
+
     case 'SET_UPCOMING_TRACKS':
       return { ...state, upcomingTracks: action.payload };
-    
+
     case 'ADD_PLAYED_TRACK':
-      return { 
-        ...state, 
-        playedTracks: [...state.playedTracks, action.payload].slice(-10) // Keep last 10
+      return {
+        ...state,
+        playedTracks: [...state.playedTracks, action.payload].slice(-10), // Keep last 10
       };
-    
+
     case 'SET_PLAYED_TRACKS':
       return { ...state, playedTracks: action.payload };
-    
+
     case 'ADD_VALIDATED_TRACKS':
       // Avoid duplicates when adding validated tracks
-      const existingIds = new Set(state.validatedTracks.map(vt => vt.id));
-      const newValidatedTracks = action.payload.filter(vt => !existingIds.has(vt.id));
-      return { 
-        ...state, 
-        validatedTracks: [...state.validatedTracks, ...newValidatedTracks]
+      const existingIds = new Set(state.validatedTracks.map((vt) => vt.id));
+      const newValidatedTracks = action.payload.filter(
+        (vt) => !existingIds.has(vt.id),
+      );
+      return {
+        ...state,
+        validatedTracks: [...state.validatedTracks, ...newValidatedTracks],
       };
-    
+
     case 'SET_VALIDATED_TRACKS':
       return { ...state, validatedTracks: action.payload };
-    
+
     case 'SET_LOADING_NEXT':
       return { ...state, isLoadingNext: action.payload };
-    
+
     case 'SET_TRANSITIONING':
       return { ...state, isTransitioning: action.payload };
-    
+
     case 'REMOVE_TRACK_FROM_PLAYLIST':
-      const filteredPlaylist = state.playlist.filter(id => id !== action.payload);
+      const filteredPlaylist = state.playlist.filter(
+        (id) => id !== action.payload,
+      );
       // Adjust current index if needed
       const removedIndex = state.playlist.indexOf(action.payload);
-      const newIndex = removedIndex < state.currentTrackIndex 
-        ? state.currentTrackIndex - 1 
-        : state.currentTrackIndex;
-      
+      const newIndex =
+        removedIndex < state.currentTrackIndex
+          ? state.currentTrackIndex - 1
+          : state.currentTrackIndex;
+
       return {
         ...state,
         playlist: filteredPlaylist,
-        currentTrackIndex: Math.max(0, Math.min(newIndex, filteredPlaylist.length - 1)),
-        validatedTracks: state.validatedTracks.filter(vt => vt.id !== action.payload),
-        upcomingTracks: state.upcomingTracks.filter(track => track.id !== action.payload),
+        currentTrackIndex: Math.max(
+          0,
+          Math.min(newIndex, filteredPlaylist.length - 1),
+        ),
+        validatedTracks: state.validatedTracks.filter(
+          (vt) => vt.id !== action.payload,
+        ),
+        upcomingTracks: state.upcomingTracks.filter(
+          (track) => track.id !== action.payload,
+        ),
       };
-    
+
     case 'ADVANCE_TO_NEXT_TRACK':
       const nextIndex = (state.currentTrackIndex + 1) % state.playlist.length;
       return {
         ...state,
         currentTrackIndex: nextIndex,
-        playedTracks: state.currentTrack 
+        playedTracks: state.currentTrack
           ? [...state.playedTracks, state.currentTrack.id].slice(-10)
           : state.playedTracks,
       };
-    
+
     case 'GO_TO_PREVIOUS_TRACK':
-      const prevIndex = (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
+      const prevIndex =
+        (state.currentTrackIndex - 1 + state.playlist.length) %
+        state.playlist.length;
       return {
         ...state,
         currentTrackIndex: prevIndex,
       };
-    
+
     case 'RESET_QUEUE':
       return { ...initialQueueState };
-    
+
     default:
       return state;
   }
@@ -188,9 +202,7 @@ export function QueueProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <QueueContext.Provider value={value}>
-      {children}
-    </QueueContext.Provider>
+    <QueueContext.Provider value={value}>{children}</QueueContext.Provider>
   );
 }
 

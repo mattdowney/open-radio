@@ -34,20 +34,19 @@ export function CompactDisc({
   }
 
   return (
-    <div
-      className={cn(
-        'relative aspect-square w-full',
-        className
-      )}
-    >
+    <div className={cn('relative aspect-square w-full', className)}>
       {/* Main CD container */}
-      <div className="relative w-full h-full rounded-full overflow-hidden bg-gray-100 shadow-2xl" style={{ isolation: 'isolate' }}>
+      <div
+        className="relative w-full h-full rounded-full overflow-hidden bg-gray-100 shadow-2xl"
+        style={{ isolation: 'isolate' }}
+      >
         {/* Spinning content */}
-        <div className={cn(
-          "absolute inset-0",
-          isPlaying && !isLoading && 'animate-spin-slow'
-        )}>
-          
+        <div
+          className={cn(
+            'absolute inset-0',
+            isPlaying && !isLoading && 'animate-spin-slow',
+          )}
+        >
           {/* CD surface - iridescent rainbow effect */}
           <div
             className="absolute inset-0 rounded-full"
@@ -102,8 +101,10 @@ export function CompactDisc({
                   transparent 1px
                 )
               `,
-              maskImage: 'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
-              WebkitMaskImage: 'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
+              maskImage:
+                'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
+              WebkitMaskImage:
+                'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
               mixBlendMode: 'overlay',
             }}
           />
@@ -122,8 +123,10 @@ export function CompactDisc({
                   transparent 2.5deg
                 )
               `,
-              maskImage: 'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
-              WebkitMaskImage: 'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
+              maskImage:
+                'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
+              WebkitMaskImage:
+                'radial-gradient(circle at center, transparent 0%, transparent 18%, black 22%, black 88%, transparent 92%)',
               opacity: 0.7,
             }}
           />
@@ -132,7 +135,8 @@ export function CompactDisc({
           <div
             className="absolute inset-0 rounded-full pointer-events-none"
             style={{
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 0 20px rgba(255,255,255,0.3), inset 0 0 40px rgba(0,0,0,0.2)'
+              boxShadow:
+                'inset 0 0 0 1px rgba(255,255,255,0.6), inset 0 0 20px rgba(255,255,255,0.3), inset 0 0 40px rgba(0,0,0,0.2)',
             }}
           />
 
@@ -147,7 +151,7 @@ export function CompactDisc({
                 className={cn(
                   'object-cover',
                   'transition-opacity duration-300',
-                  imageLoading ? 'opacity-100' : 'opacity-100'
+                  imageLoading ? 'opacity-100' : 'opacity-100',
                 )}
                 onLoad={() => setImageLoading(false)}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -155,14 +159,14 @@ export function CompactDisc({
                 quality={90}
               />
             </div>
-            
+
             {/* Center hole */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[18%] h-[18%] rounded-full bg-black shadow-inner">
               <div className="absolute inset-[20%] rounded-full bg-black" />
             </div>
           </div>
         </div>
-        
+
         {/* Subtle surface texture overlay */}
         <div
           className="absolute inset-0 rounded-full pointer-events-none"
@@ -177,12 +181,13 @@ export function CompactDisc({
             opacity: 0.6,
           }}
         />
-        
+
         {/* Edge bevel effect */}
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none rounded-full"
           style={{
-            boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2)',
+            boxShadow:
+              'inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2)',
           }}
         />
 
@@ -211,7 +216,6 @@ export function CompactDisc({
             opacity: 0.5,
           }}
         />
-
       </div>
     </div>
   );
