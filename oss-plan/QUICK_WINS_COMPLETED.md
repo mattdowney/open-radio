@@ -149,7 +149,7 @@ All items from the quick wins checklist have been completed successfully. The re
 - ✅ Implemented graceful fallback: shows headphones icon + "LIVE" text when Firebase is not configured
 
 **Firebase Integration Benefits:**
-- ✅ Users can now run the app without Firebase by setting `NEXT_PUBLIC_ENABLE_FIREBASE=false`
+- ✅ Users can now run the app without Firebase by setting `NEXT_PUBLIC_FIREBASE_ENABLED=false`
 - ✅ Clean separation between Firebase-dependent and Firebase-independent functionality
 - ✅ Maintains all existing functionality for users who want real-time listener count
 - ✅ Provides professional "LIVE" indicator for users who don't need database integration
