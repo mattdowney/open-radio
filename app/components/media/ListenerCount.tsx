@@ -337,30 +337,6 @@ export function ListenerCount({ className }: ListenerCountProps) {
 
   // Initialize Firebase connection and listener tracking
   const initializeListenerTracking = async () => {
-    // Debug production Firebase config - VERY OBVIOUS LOGGING
-    console.error('🚨🔥 FIREBASE DEBUG - SHOULD SEE THIS IN PRODUCTION 🔥🚨');
-    console.error('Firebase Config Details:', {
-      enableFirebase: appConfig.enableFirebase,
-      envVar: process.env.NEXT_PUBLIC_FIREBASE_ENABLED,
-      isProduction: process.env.NODE_ENV === 'production',
-      nodeEnv: process.env.NODE_ENV,
-      allFirebaseEnvVars: {
-        enabled: process.env.NEXT_PUBLIC_FIREBASE_ENABLED,
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'MISSING',
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? 'SET' : 'MISSING',
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'SET' : 'MISSING',
-      }
-    });
-    
-    // Debug production Firebase config
-    if (typeof window !== 'undefined') {
-      console.log('🔥 Production Firebase Debug:', {
-        enableFirebase: appConfig.enableFirebase,
-        envVar: process.env.NEXT_PUBLIC_FIREBASE_ENABLED,
-        isProduction: process.env.NODE_ENV === 'production'
-      });
-    }
-    
     // If Firebase is disabled, show LIVE badge immediately
     if (!appConfig.enableFirebase) {
       setListenerCount(null); // null will show LIVE badge
