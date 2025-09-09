@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { cn } from '@/app/lib/utils';
@@ -11,12 +11,6 @@ interface AlbumCoverProps {
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
 }
-
-const sizes = {
-  sm: 40,
-  md: 200,
-  lg: 400,
-};
 
 // Image preload cache
 const preloadCache = new Set<string>();
@@ -38,7 +32,6 @@ export function AlbumCover({
   isLoading = false,
 }: AlbumCoverProps) {
   const [imageLoading, setImageLoading] = useState(true);
-  const imageSize = sizes[size];
 
   // If in loading state or no src, show skeleton
   if (isLoading || !src) {
@@ -76,9 +69,7 @@ export function AlbumCover({
         className={cn(
           'object-cover rounded-[inherit]',
           'transition-all duration-300 ease-in-out',
-          imageLoading
-            ? 'scale-[105%] opacity-0'
-            : 'scale-[102%] opacity-100',
+          imageLoading ? 'scale-[105%] opacity-0' : 'scale-[102%] opacity-100',
         )}
         style={{
           willChange: 'transform, opacity, filter',

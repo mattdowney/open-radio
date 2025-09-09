@@ -9,10 +9,7 @@ const tempRatingStore: {
   };
 } = {};
 
-export async function GET(
-  request: Request,
-  { params }: { params: { trackId: string } },
-) {
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const trackId = searchParams.get('trackId');
 

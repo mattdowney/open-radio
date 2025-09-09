@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Marquee from 'react-fast-marquee';
 import { cn } from '../../lib/utils';
 
-interface MarqueeTitleProps {
+interface TrackInfoProps {
   title: string;
   className?: string;
   bgColor?: string;
@@ -25,13 +25,13 @@ function toTitleCase(str: string): string {
     .join(' ');
 }
 
-export function MarqueeTitle({
+export function TrackInfo({
   title,
   className,
   bgColor = 'black',
   'data-group-hover-bg-color': groupHoverBgColor,
   animateOnHover = false,
-}: MarqueeTitleProps) {
+}: TrackInfoProps) {
   const [needsMarquee, setNeedsMarquee] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [shouldAnimate, setShouldAnimate] = useState(false);

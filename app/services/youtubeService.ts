@@ -1,13 +1,16 @@
 import { shuffle } from 'lodash';
-import { 
-  YouTubeVideoItem, 
-  YouTubePlaylistItem, 
-  YouTubeApiResponse 
+import {
+  YouTubeVideoItem,
+  YouTubePlaylistItem,
+  YouTubeApiResponse,
 } from '../types/youtube';
 import { TrackDetails, ValidatedTrack } from '../types/track';
 
 export class YouTubeAPIError extends Error {
-  constructor(message: string, public statusCode?: number) {
+  constructor(
+    message: string,
+    public statusCode?: number,
+  ) {
     super(message);
     this.name = 'YouTubeAPIError';
   }
@@ -32,26 +35,28 @@ export class YouTubeService {
 
     try {
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new YouTubeAPIError(
           `API Error: ${errorData.error?.message || 'Unknown error'}`,
-          response.status
+          response.status,
         );
       }
 
-      const data: YouTubeApiResponse<YouTubePlaylistItem> = await response.json();
+      const data: YouTubeApiResponse<YouTubePlaylistItem> =
+        await response.json();
 
       if (!data || !data.items || !Array.isArray(data.items)) {
         throw new YouTubeAPIError('Invalid playlist data received');
       }
 
       const videoIds = data.items
-        .filter((item): item is YouTubePlaylistItem => 
-          item?.snippet?.resourceId?.videoId != null
+        .filter(
+          (item): item is YouTubePlaylistItem =>
+            item?.snippet?.resourceId?.videoId != null,
         )
-        .map(item => item.snippet.resourceId.videoId);
+        .map((item) => item.snippet.resourceId.videoId);
 
       if (videoIds.length === 0) {
         throw new YouTubeAPIError('No videos found in playlist');
@@ -62,7 +67,9 @@ export class YouTubeService {
       if (error instanceof YouTubeAPIError) {
         throw error;
       }
-      throw new YouTubeAPIError(`Failed to fetch playlist: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new YouTubeAPIError(
+        `Failed to fetch playlist: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -80,7 +87,10 @@ export class YouTubeService {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new YouTubeAPIError(`API request failed: ${response.status}`, response.status);
+        throw new YouTubeAPIError(
+          `API request failed: ${response.status}`,
+          response.status,
+        );
       }
 
       const data: YouTubeApiResponse<YouTubeVideoItem> = await response.json();
@@ -101,7 +111,9 @@ export class YouTubeService {
       if (error instanceof YouTubeAPIError) {
         throw error;
       }
-      throw new YouTubeAPIError(`Failed to fetch video details: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new YouTubeAPIError(
+        `Failed to fetch video details: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 
@@ -126,7 +138,7 @@ export class YouTubeService {
    * Validate multiple tracks in parallel
    */
   async validateTracks(trackIds: string[]): Promise<ValidatedTrack[]> {
-    const validationPromises = trackIds.map(id => this.validateTrack(id));
+    const validationPromises = trackIds.map((id) => this.validateTrack(id));
     const results = await Promise.all(validationPromises);
     return results.filter((track): track is ValidatedTrack => track !== null);
   }
@@ -134,13 +146,15 @@ export class YouTubeService {
   /**
    * Parse video snippet into TrackDetails
    */
-  private parseVideoDetails(snippet: YouTubeVideoItem['snippet']): TrackDetails {
+  private parseVideoDetails(
+    snippet: YouTubeVideoItem['snippet'],
+  ): TrackDetails {
     const fullTitle = snippet.title || '';
     const [artist, ...titleParts] = fullTitle.split(' - ');
     const title = titleParts.join(' - ') || fullTitle;
 
     // Use highest quality thumbnail available
-    const albumCoverUrl = 
+    const albumCoverUrl =
       snippet.thumbnails?.maxres?.url ||
       snippet.thumbnails?.high?.url ||
       snippet.thumbnails?.medium?.url ||
@@ -179,7 +193,7 @@ let youtubeServiceInstance: YouTubeService | null = null;
 
 export function getYouTubeService(): YouTubeService {
   const apiKey = process.env.NEXT_PUBLIC_YOUTUBE_API_KEY;
-  
+
   if (!apiKey) {
     throw new YouTubeAPIError('YouTube API key not configured');
   }

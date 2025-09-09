@@ -20,8 +20,15 @@ interface YouTubePlayerManagerProps {
   onError: (error: string) => void;
 }
 
-export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManagerProps) {
-  const { state: playerState, dispatch: playerDispatch, playerRef } = usePlayer();
+export function YouTubePlayerManager({
+  onTrackEnd,
+  onError,
+}: YouTubePlayerManagerProps) {
+  const {
+    state: playerState,
+    dispatch: playerDispatch,
+    playerRef,
+  } = usePlayer();
   const { state: queueState } = useQueue();
   const { setError } = useUI();
   const initializingRef = useRef(false);
@@ -140,7 +147,11 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         }
       } catch (error) {
         console.error('Error initializing player:', error);
-        setError(error instanceof Error ? error.message : 'Failed to initialize video player');
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Failed to initialize video player',
+        );
       } finally {
         initializingRef.current = false;
       }
@@ -171,7 +182,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     // Also listen for focus events which can be triggered by DevTools
     const handleFocus = () => {
       if (playerState.isPlaying && playerRef.current) {
@@ -181,7 +192,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
         }
       }
     };
-    
+
     window.addEventListener('focus', handleFocus);
 
     return () => {
@@ -196,7 +207,7 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
       setError('Failed to initialize video player properly');
       return;
     }
-    
+
     playerRef.current = event.target;
     playerDispatch({ type: 'SET_PLAYER_READY', payload: true });
     playerDispatch({ type: 'SET_VOLUME', payload: playerState.volume });
@@ -211,7 +222,9 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
       150: 'Video playback not allowed',
     } as const;
 
-    const message = errorMessages[event.data as keyof typeof errorMessages] || 'Error loading video player';
+    const message =
+      errorMessages[event.data as keyof typeof errorMessages] ||
+      'Error loading video player';
 
     // If it's a video-specific error, try playing the next track
     if ([100, 101, 150].includes(event.data)) {
@@ -225,7 +238,10 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     onErrorRef.current(message);
   };
 
-  const handlePlayerStateChange = (event: { target: YouTubePlayer; data: number }) => {
+  const handlePlayerStateChange = (event: {
+    target: YouTubePlayer;
+    data: number;
+  }) => {
     const playerStateValue = event.data;
 
     switch (playerStateValue) {
@@ -235,7 +251,8 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
         try {
           const currentQueue = latestQueueStateRef.current;
-          const nextIndex = (currentQueue.currentTrackIndex + 1) % currentQueue.playlist.length;
+          const nextIndex =
+            (currentQueue.currentTrackIndex + 1) % currentQueue.playlist.length;
           const nextTrackId = currentQueue.playlist[nextIndex];
           if (playerRef.current && nextTrackId) {
             playerRef.current.loadVideoById(nextTrackId);
@@ -267,7 +284,11 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
       case PlayerState.PAUSED:
         // If we should be playing (user interacted OR auto-advancing) and tab visible, resume
-        if ((latestPlayerStateRef.current.hasUserInteracted || latestPlayerStateRef.current.isAutoAdvancing) && !document.hidden) {
+        if (
+          (latestPlayerStateRef.current.hasUserInteracted ||
+            latestPlayerStateRef.current.isAutoAdvancing) &&
+          !document.hidden
+        ) {
           setTimeout(() => {
             if (playerRef.current) {
               try {
@@ -285,7 +306,12 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
       case PlayerState.CUED:
         // When a video is cued and we should continue playing, kick playback
-        if (playerRef.current && (latestPlayerStateRef.current.isPlaying || latestPlayerStateRef.current.hasUserInteracted || latestPlayerStateRef.current.isAutoAdvancing)) {
+        if (
+          playerRef.current &&
+          (latestPlayerStateRef.current.isPlaying ||
+            latestPlayerStateRef.current.hasUserInteracted ||
+            latestPlayerStateRef.current.isAutoAdvancing)
+        ) {
           setTimeout(() => {
             try {
               playerRef.current?.playVideo();
@@ -296,7 +322,12 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
       case PlayerState.UNSTARTED:
         // Occasionally gets stuck; if we intend to play, nudge it
-        if (playerRef.current && (latestPlayerStateRef.current.isPlaying || latestPlayerStateRef.current.hasUserInteracted || latestPlayerStateRef.current.isAutoAdvancing)) {
+        if (
+          playerRef.current &&
+          (latestPlayerStateRef.current.isPlaying ||
+            latestPlayerStateRef.current.hasUserInteracted ||
+            latestPlayerStateRef.current.isAutoAdvancing)
+        ) {
           setTimeout(() => {
             try {
               playerRef.current?.playVideo();
@@ -312,7 +343,11 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
 
   // Load video when current track changes
   useEffect(() => {
-    if (!playerState.isPlayerReady || !playerRef.current || !queueState.currentTrack) {
+    if (
+      !playerState.isPlayerReady ||
+      !playerRef.current ||
+      !queueState.currentTrack
+    ) {
       return;
     }
 
@@ -321,11 +356,14 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
       if (currentVideoId && currentVideoId !== playerState.currentVideoId) {
         // Check if we should auto-play
         // Auto-play if: currently playing, user has interacted, or we're auto-advancing
-        const shouldAutoPlay = playerState.isPlaying || playerState.hasUserInteracted || playerState.isAutoAdvancing;
-        
+        const shouldAutoPlay =
+          playerState.isPlaying ||
+          playerState.hasUserInteracted ||
+          playerState.isAutoAdvancing;
+
         playerRef.current?.loadVideoById(currentVideoId);
         playerDispatch({ type: 'SET_CURRENT_VIDEO', payload: currentVideoId });
-        
+
         // Auto-play if we should continue playing
         if (shouldAutoPlay) {
           // Try immediate play, with a short retry if needed
@@ -351,7 +389,12 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
           setTimeout(() => {
             try {
               const state = playerRef.current?.getPlayerState();
-              if (state !== PlayerState.PLAYING && (playerState.isAutoAdvancing || playerState.hasUserInteracted || playerState.isPlaying)) {
+              if (
+                state !== PlayerState.PLAYING &&
+                (playerState.isAutoAdvancing ||
+                  playerState.hasUserInteracted ||
+                  playerState.isPlaying)
+              ) {
                 playerRef.current?.playVideo();
               }
             } catch {}
@@ -371,10 +414,8 @@ export function YouTubePlayerManager({ onTrackEnd, onError }: YouTubePlayerManag
     playerState.hasUserInteracted,
     playerState.isAutoAdvancing,
     playerRef,
-    playerDispatch
+    playerDispatch,
   ]);
-
-
 
   // Cleanup on unmount
   useEffect(() => {

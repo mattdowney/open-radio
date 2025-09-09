@@ -1,25 +1,66 @@
-# MD Radio
+# Open Radio 🎵
 
-An immersive online radio experience built with Next.js and YouTube API.
+> **Note**: This project is currently transitioning to open source.
+> Comprehensive documentation and setup guides are coming soon!
+
+A beautiful radio application built with Next.js, React, and TypeScript.
+
+## Current Status
+- ✅ Core functionality complete
+- 🚧 Open source preparation in progress
+- 📚 Documentation being enhanced
+- 🎯 Community features planned
 
 ## Features
 
-- Seamless music streaming using YouTube as a source
-- Beautiful blurred album art backgrounds
-- Real-time listener count showing how many people are enjoying the radio with you
-- Track information with artist and title
-- Upcoming tracks queue
-- Volume control and playback controls
+- 🎵 Seamless music streaming using YouTube as a source
+- 🎨 Beautiful blurred album art backgrounds with dynamic color extraction
+- 👥 Real-time listener count showing how many people are tuned in
+- 💿 Gorgeous vinyl record visualization with realistic animations
+- 📱 Responsive design that works on all devices
+- ⚡ Fast, modern Next.js 14 architecture with TypeScript
 
-## Getting Started
+## Quick Start
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Set up environment variables:
-   - Copy `.env.local.example` to `.env.local`
-   - Add your YouTube API key
-   - Configure Firebase for real-time features (see below)
-4. Run the development server: `npm run dev`
+```bash
+# Clone the repository
+git clone <repository-url>
+cd open-radio
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your API keys
+
+# Start development server
+npm run dev
+```
+
+## Configuration
+
+The app is highly configurable through environment variables:
+
+```bash
+# App Identity
+NEXT_PUBLIC_APP_NAME=Open Radio
+NEXT_PUBLIC_APP_DESCRIPTION=A beautiful radio experience
+
+# YouTube Integration
+NEXT_PUBLIC_YOUTUBE_API_KEY=your_api_key
+NEXT_PUBLIC_DEFAULT_PLAYLIST_ID=your_playlist_id
+
+# Optional Features
+NEXT_PUBLIC_ENABLE_ANALYTICS=false
+NEXT_PUBLIC_ENABLE_FIREBASE=true
+
+# Custom Branding
+NEXT_PUBLIC_LOGO_URL=/assets/logo.svg
+NEXT_PUBLIC_BRANDING_LINK_URL=https://your-site.com
+```
+
+See `.env.local.example` for all available options.
 
 ## Firebase Setup for Real-Time Features
 
@@ -29,12 +70,13 @@ For complete setup instructions, see [Firebase Setup Guide](./docs/FIREBASE_SETU
 
 ## Tech Stack
 
-- Next.js 13+ with App Router
-- React 18
-- TypeScript
-- Tailwind CSS
-- YouTube API
-- Firebase Realtime Database for social features
+- **Next.js 14.1.3** with App Router
+- **React 18** with TypeScript
+- **Tailwind CSS** for styling
+- **YouTube API** for music streaming
+- **Firebase Realtime Database** for live features
+- **Framer Motion** for smooth animations
+- **WebGL Shaders** for visual effects
 
 ## License
 
