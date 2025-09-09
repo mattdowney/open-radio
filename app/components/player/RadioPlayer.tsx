@@ -4,7 +4,10 @@ import { useEffect, useCallback, useRef } from 'react';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useQueue } from '../../contexts/QueueContext';
 import { useUI } from '../../contexts/UIContext';
-import { getYouTubeService, YouTubeAPIError } from '../../services/youtubeService';
+import {
+  getYouTubeService,
+  YouTubeAPIError,
+} from '../../services/youtubeService';
 import { YouTubePlayerManager } from './YouTubePlayerManager';
 import { RadioLayout } from '../layout/RadioLayout';
 import { Track } from '../../types/track';
