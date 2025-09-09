@@ -337,6 +337,15 @@ export function ListenerCount({ className }: ListenerCountProps) {
 
   // Initialize Firebase connection and listener tracking
   const initializeListenerTracking = async () => {
+    // Debug production Firebase config
+    if (typeof window !== 'undefined') {
+      console.log('🔥 Production Firebase Debug:', {
+        enableFirebase: appConfig.enableFirebase,
+        envVar: process.env.NEXT_PUBLIC_FIREBASE_ENABLED,
+        isProduction: process.env.NODE_ENV === 'production'
+      });
+    }
+    
     // If Firebase is disabled, show LIVE badge immediately
     if (!appConfig.enableFirebase) {
       setListenerCount(null); // null will show LIVE badge
