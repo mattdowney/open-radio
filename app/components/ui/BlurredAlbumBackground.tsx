@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { usePageVisibility } from '../../hooks/usePageVisibility';
 
 interface BlurredAlbumBackgroundProps {
   className?: string;
@@ -22,6 +23,7 @@ const BlurredAlbumBackground = ({
 }: BlurredAlbumBackgroundProps) => {
   const [displayUrl, setDisplayUrl] = useState(albumCoverUrl);
   const [showBlack, setShowBlack] = useState(false);
+  const _isPageVisible = usePageVisibility();
 
   // Immediately fade to black when shouldFadeToBlack is true
   useEffect(() => {
@@ -48,36 +50,6 @@ const BlurredAlbumBackground = ({
 
   return (
     <div className={`relative w-full h-full overflow-hidden ${className || ''}`}>
-      {/* Custom keyframe animation for scale + rotate */}
-      <style jsx>{`
-        @keyframes scaleAndSpin {
-          from {
-            transform: scale(3) rotate(0deg);
-          }
-          to {
-            transform: scale(3) rotate(360deg);
-          }
-        }
-      `}</style>
-
-      {/* SVG Filter Definition for Noise */}
-      <svg className="absolute w-0 h-0" aria-hidden="true">
-        <defs>
-          <filter id="album-noise-filter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="15" />
-            <feColorMatrix type="saturate" values="0" />
-            <feComponentTransfer>
-              <feFuncA
-                type="discrete"
-                tableValues="0 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 1"
-              />
-            </feComponentTransfer>
-            <feGaussianBlur stdDeviation="0.5" />
-            <feComposite operator="over" />
-          </filter>
-        </defs>
-      </svg>
-
       {/* Fallback dark background */}
       <div className="absolute inset-0 bg-black" />
 
@@ -116,23 +88,13 @@ const BlurredAlbumBackground = ({
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
               style={{
-                animation: 'scaleAndSpin 90s linear infinite',
-                willChange: 'transform',
+                transform: 'scale(3) translate3d(0,0,0)',
+                willChange: 'auto',
               }}
             />
           </motion.div>
         ) : null}
       </AnimatePresence>
-
-      {/* Noise overlay to prevent banding */}
-      <div
-        className="absolute inset-0 opacity-[0.025] mix-blend-screen pointer-events-none"
-        style={{
-          filter: 'url(#album-noise-filter)',
-          transform: 'scale(1.5)',
-          willChange: 'auto',
-        }}
-      />
 
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/50 pointer-events-none" />

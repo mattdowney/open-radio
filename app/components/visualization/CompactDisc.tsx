@@ -4,6 +4,7 @@ import { cn } from '@/app/lib/utils';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { useState } from 'react';
+import { usePageVisibility } from '../../hooks/usePageVisibility';
 
 interface CompactDiscProps {
   src?: string;
@@ -21,6 +22,7 @@ export function CompactDisc({
   className = '',
 }: CompactDiscProps) {
   const [imageLoading, setImageLoading] = useState(true);
+  const isPageVisible = usePageVisibility();
 
   // If loading or no src, show skeleton
   if (isLoading || !src) {
@@ -41,7 +43,12 @@ export function CompactDisc({
         style={{ isolation: 'isolate' }}
       >
         {/* Spinning content */}
-        <div className={cn('absolute inset-0', isPlaying && !isLoading && 'animate-spin-slow')}>
+        <div
+          className="absolute inset-0 animate-spin-slow"
+          style={{
+            animationPlayState: isPlaying && !isLoading && isPageVisible ? 'running' : 'paused',
+          }}
+        >
           {/* CD surface - iridescent rainbow effect */}
           <div
             className="absolute inset-0 rounded-full"

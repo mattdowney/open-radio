@@ -4,6 +4,7 @@ import { cn } from '@/app/lib/utils';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { useState } from 'react';
+import { usePageVisibility } from '../../hooks/usePageVisibility';
 
 interface VinylRecordProps {
   src?: string;
@@ -21,6 +22,7 @@ export function VinylRecord({
   className = '',
 }: VinylRecordProps) {
   const [imageLoading, setImageLoading] = useState(true);
+  const isPageVisible = usePageVisibility();
 
   // If loading or no src, show skeleton
   if (isLoading || !src) {
@@ -44,8 +46,8 @@ export function VinylRecord({
         <div
           className="absolute inset-0 animate-spin-slow"
           style={{
-            willChange: 'transform',
-            animationPlayState: isPlaying && !isLoading ? 'running' : 'paused',
+            animationPlayState: isPlaying && !isLoading && isPageVisible ? 'running' : 'paused',
+            willChange: 'auto',
           }}
         >
           {/* Subtle vinyl surface shading */}
@@ -165,7 +167,7 @@ export function VinylRecord({
           `,
             filter: 'blur(10px)',
             mixBlendMode: 'screen',
-            opacity: 0.35,
+            opacity: 0.4,
           }}
         />
         <div
@@ -176,7 +178,7 @@ export function VinylRecord({
           `,
             filter: 'blur(6px)',
             mixBlendMode: 'screen',
-            opacity: 0.25,
+            opacity: 0.3,
           }}
         />
 

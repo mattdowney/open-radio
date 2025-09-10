@@ -9,7 +9,8 @@
 /* Import Polymath Variable Font */
 @font-face {
   font-family: 'Polymath';
-  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/PolymathVar.woff2?v=1748365175') format('woff2-variations');
+  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/PolymathVar.woff2?v=1748365175')
+    format('woff2-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -17,18 +18,21 @@
 
 @mixin font-polymath($weight: 600, $serif: 100, $italic: 11) {
   font-family:
-    "Polymath",
+    'Polymath',
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     Roboto,
-    "Helvetica Neue",
+    'Helvetica Neue',
     Arial,
     sans-serif,
-    "Apple Color Emoji",
-    "Segoe UI Emoji",
-    "Segoe UI Symbol";
-  font-variation-settings: "wght" #{$weight}, "SERF" #{$serif}, "ital" #{$italic};
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  font-variation-settings:
+    'wght' #{$weight},
+    'SERF' #{$serif},
+    'ital' #{$italic};
 }
 
 /* Tailwind Base Layer */
@@ -36,9 +40,17 @@
   * {
     font-feature-settings: inherit;
   }
-  
+
   html {
-    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family:
+      'Geist',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
   }
 }
 
@@ -64,26 +76,27 @@
 
 /* Typography */
 
-$hand: 'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS',
-  'Apple Chancery', cursive;
+$hand:
+  'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS', 'Apple Chancery',
+  cursive;
 
 .font-mono {
-  font-family: "Geist Mono", "Space Mono", monospace;
+  font-family: 'Geist Mono', 'Space Mono', monospace;
 }
 
 /* CSS Variables for Theme System */
 :root {
   /* Default theme (dark) - fallbacks */
-  --theme-primary: #FBFBFB;
-  --theme-secondary: #FF65D2;
-  --theme-background: #00020B;
-  --theme-surface: #2E2F35;
-  --theme-text: #FBFBFB;
-  --theme-textSecondary: #FBFBFB80;
-  --theme-accent: #FF5101;
-  --theme-vinyl: #1A1A1A;
-  --theme-cd: #C0C0C0;
-  --theme-visualizerGlow: #FF65D2;
+  --theme-primary: #fbfbfb;
+  --theme-secondary: #ff65d2;
+  --theme-background: #00020b;
+  --theme-surface: #2e2f35;
+  --theme-text: #fbfbfb;
+  --theme-textSecondary: #fbfbfb80;
+  --theme-accent: #ff5101;
+  --theme-vinyl: #1a1a1a;
+  --theme-cd: #c0c0c0;
+  --theme-visualizerGlow: #ff65d2;
   --theme-transitionDuration: 300ms;
   --theme-vinylSpeed: 2s;
   --theme-cdSpeed: 1s;
@@ -91,21 +104,22 @@ $hand: 'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS',
 
 /* Theme transition class */
 .theme-transitioning * {
-  transition: background-color var(--theme-transitionDuration) ease,
-              color var(--theme-transitionDuration) ease,
-              border-color var(--theme-transitionDuration) ease,
-              box-shadow var(--theme-transitionDuration) ease !important;
+  transition:
+    background-color var(--theme-transitionDuration) ease,
+    color var(--theme-transitionDuration) ease,
+    border-color var(--theme-transitionDuration) ease,
+    box-shadow var(--theme-transitionDuration) ease !important;
 }
 
 /* Legacy Color Palette (for backward compatibility) */
-$white: #FBFBFB;
-$pink: #FF65D2;
-$orange: #FF5101;
-$yellow: #FFF200;
-$green: #5EEDA1;
-$blue: #002EFF;
-$dark: #2E2F35;
-$black: #00020B;
+$white: #fbfbfb;
+$pink: #ff65d2;
+$orange: #ff5101;
+$yellow: #fff200;
+$green: #5eeda1;
+$blue: #002eff;
+$dark: #2e2f35;
+$black: #00020b;
 
 /* Global */
 
@@ -122,8 +136,18 @@ body {
   @apply font-geist pb-0 leading-[1.25];
   scroll-behavior: smooth;
   scrollbar-width: none;
-  font-feature-settings: 'dlig' 1, 'ss04' 1;
-  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings:
+    'dlig' 1,
+    'ss04' 1;
+  font-family:
+    'Geist',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
   background-color: var(--theme-background);
   color: var(--theme-text);
 }
@@ -144,7 +168,9 @@ h1,
 
   .emphasis {
     @apply font-semibold;
-    font-feature-settings: 'dlig' 1, 'ss04' 1;
+    font-feature-settings:
+      'dlig' 1,
+      'ss04' 1;
   }
 }
 
@@ -158,7 +184,9 @@ h2,
 
   .emphasis {
     @apply font-medium;
-    font-feature-settings: 'dlig' 1, 'ss04' 1;
+    font-feature-settings:
+      'dlig' 1,
+      'ss04' 1;
   }
 }
 
@@ -206,34 +234,60 @@ input,
   a {
     @apply inline no-underline text-black duration-duration-fast ease-in-out font-medium;
 
-    background: linear-gradient(transparent, transparent),
+    background:
+      linear-gradient(transparent, transparent),
       linear-gradient(to right, rgba($black, 0.15), rgba($black, 0.15)),
       linear-gradient(to right, $black, $black);
-    background-size: 30px 2px, 100% 2px, 0 2px;
-    background-position: calc(30px * -1) 100%, 100% 100%, 0 100%;
+    background-size:
+      30px 2px,
+      100% 2px,
+      0 2px;
+    background-position:
+      calc(30px * -1) 100%,
+      100% 100%,
+      0 100%;
     background-repeat: no-repeat;
 
     &:hover {
       @apply no-underline text-black;
-      background-size: 30px 2px, 0 2px, 100% 2px;
-      background-position: calc(100% + 30px) 100%, 100% 100%, 0 100%;
+      background-size:
+        30px 2px,
+        0 2px,
+        100% 2px;
+      background-position:
+        calc(100% + 30px) 100%,
+        100% 100%,
+        0 100%;
     }
   }
 
   a.alt-link {
     @apply inline no-underline text-white duration-duration-fast ease-in-out font-medium;
 
-    background: linear-gradient(transparent, transparent),
+    background:
+      linear-gradient(transparent, transparent),
       linear-gradient(to right, rgba($white, 0.15), rgba($white, 0.15)),
       linear-gradient(to right, $white, $white);
-    background-size: 30px 2px, 100% 2px, 0 2px;
-    background-position: calc(30px * -1) 100%, 100% 100%, 0 100%;
+    background-size:
+      30px 2px,
+      100% 2px,
+      0 2px;
+    background-position:
+      calc(30px * -1) 100%,
+      100% 100%,
+      0 100%;
     background-repeat: no-repeat;
 
     &:hover {
       @apply no-underline text-white;
-      background-size: 30px 2px, 0 2px, 100% 2px;
-      background-position: calc(100% + 30px) 100%, 100% 100%, 0 100%;
+      background-size:
+        30px 2px,
+        0 2px,
+        100% 2px;
+      background-position:
+        calc(100% + 30px) 100%,
+        100% 100%,
+        0 100%;
     }
   }
 
@@ -330,11 +384,11 @@ strong {
 
 @keyframes spin {
   from {
-    transform: rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
 
   to {
-    transform: rotate(360deg);
+    transform: translate3d(0, 0, 0) rotate(360deg);
   }
 }
 
@@ -345,6 +399,22 @@ strong {
 
 .spin-animation.playing {
   animation-play-state: running;
+}
+
+/* CD Spinner Classes */
+.cd-spinner {
+  animation: spin 0.3s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.cd-spinner.cd-spinning {
+  animation-play-state: running;
+}
+
+.cd-spinner.cd-paused {
+  animation-play-state: paused;
 }
 
 /* Loading animation */
@@ -383,16 +453,14 @@ strong {
 }
 
 .marquee-gradient {
-  -webkit-mask-image: linear-gradient(to right,
-      transparent,
-      black 15%,
-      black 85%,
-      transparent 100%);
-  mask-image: linear-gradient(to right,
-      transparent,
-      black 15%,
-      black 85%,
-      transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent 100%);
 }
 
 @keyframes marquee {

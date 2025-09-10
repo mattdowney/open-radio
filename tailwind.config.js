@@ -100,7 +100,8 @@ module.exports = {
 
       animation: {
         'spin-fast': 'spin 0.6s linear infinite',
-        'spin-slow': 'spin 3s linear infinite',
+        'spin-slow': 'spin 1.82s linear infinite', // 33rpm = 60/33 ≈ 1.82s
+        'spin-33rpm': 'spin 1.82s linear infinite', // Exact 33rpm
         'fade-in-dramatic': 'fadeInDramatic 1.2s ease-out forwards',
         'spin-pulse': 'spinAndPulse 120s linear infinite',
         'spin-only': 'spinOnly 120s linear infinite',

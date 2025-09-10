@@ -43,7 +43,7 @@ export function RadioLayout({
   isLoading,
   error,
   currentTrack,
-  upcomingTracks,
+  upcomingTracks: _upcomingTracks,
   isPlaying,
   volume,
   isLoadingNext,
@@ -52,7 +52,7 @@ export function RadioLayout({
   onPlayPause,
   onNext,
   onPrevious,
-  onTrackSelect,
+  onTrackSelect: _onTrackSelect,
 }: RadioLayoutProps) {
   const { setVolume, muteToggle } = usePlayer();
   useUI();
@@ -323,7 +323,12 @@ export function RadioLayout({
                     shouldFadeToBlack={isTransitioning}
                   />
                   <div className="absolute inset-0 z-10 mix-blend-overlay">
-                    <MeshGradient className="w-full h-full" colors={shaderColors} speed={0.8} />
+                    <MeshGradient
+                      className="w-full h-full"
+                      colors={shaderColors}
+                      speed={0.1}
+                      style={{ willChange: 'auto' }}
+                    />
                   </div>
 
                   {/* Static dither grain overlay */}

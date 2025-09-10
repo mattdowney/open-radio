@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { useState } from 'react';
 import { VisualizerProps } from '../../types/visualizer';
+import { usePageVisibility } from '../../hooks/usePageVisibility';
 
 export function CDVisualizer({
   src,
@@ -14,6 +15,9 @@ export function CDVisualizer({
   className = '',
 }: VisualizerProps) {
   const [, setImageLoading] = useState(true);
+  const isPageVisible = usePageVisibility();
+
+  const spinningClass = isPlaying && isPageVisible ? 'cd-spinning' : 'cd-paused';
 
   // If loading or no src, show skeleton
   if (isLoading || !src) {
@@ -30,32 +34,29 @@ export function CDVisualizer({
   return (
     <div className={cn('relative aspect-square w-full drop-shadow-2xl', className)}>
       {/* Main CD container */}
-      <div 
+      <div
         className="relative w-full h-full rounded-full overflow-hidden"
         style={{
           maskImage: 'radial-gradient(circle, transparent 10%, black 10.5%)',
-          WebkitMaskImage: 'radial-gradient(circle, transparent 10%, black 10.5%)'
+          WebkitMaskImage: 'radial-gradient(circle, transparent 10%, black 10.5%)',
         }}
       >
         {/* CD Base - Polycarbonate disc */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full"
           style={{
-            background: 'linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 25%, #d0d0d0 50%, #c0c0c0 75%, #b0b0b0 100%)',
-            boxShadow: 'inset 0 0 50px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.3)'
+            background:
+              'linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 25%, #d0d0d0 50%, #c0c0c0 75%, #b0b0b0 100%)',
+            boxShadow: 'inset 0 0 50px rgba(0,0,0,0.1), 0 8px 32px rgba(0,0,0,0.3)',
           }}
         />
 
         {/* Spinning album artwork layer */}
         <div
-          className="absolute inset-0 rounded-full overflow-hidden"
-          style={{
-            willChange: 'transform',
-            animation: isPlaying ? 'spin 0.5s linear infinite' : 'none',
-          }}
+          className={`absolute inset-0 rounded-full overflow-hidden cd-spinner ${spinningClass}`}
         >
           {/* Album artwork printed on CD surface */}
-          <div className="relative w-full h-full">
+          <div className="relative w-full h-full min-h-[200px]">
             <Image
               src={src}
               alt={alt}
@@ -69,9 +70,9 @@ export function CDVisualizer({
               priority
               quality={90}
             />
-            
+
             {/* CD data track pattern - very fine concentric circles */}
-            <div 
+            <div
               className="absolute inset-0 rounded-full opacity-8"
               style={{
                 background: `
@@ -85,22 +86,25 @@ export function CDVisualizer({
                     transparent 1.9px
                   )
                 `,
-                maskImage: 'radial-gradient(circle, transparent 22%, black 25%, black 85%, transparent 88%)',
-                WebkitMaskImage: 'radial-gradient(circle, transparent 22%, black 25%, black 85%, transparent 88%)'
+                maskImage:
+                  'radial-gradient(circle, transparent 22%, black 25%, black 85%, transparent 88%)',
+                WebkitMaskImage:
+                  'radial-gradient(circle, transparent 22%, black 25%, black 85%, transparent 88%)',
               }}
             />
           </div>
 
           {/* Outermost black ring */}
-          <div 
+          <div
             className="absolute top-1/2 left-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full z-30"
             style={{
-              background: 'radial-gradient(circle at center, rgba(20,20,20,0.9) 0%, rgba(0,0,0,0.95) 100%)',
-              boxShadow: 'inset 0 0 20px rgba(0,0,0,0.6), 0 0 15px rgba(0,0,0,0.3)'
+              background:
+                'radial-gradient(circle at center, rgba(20,20,20,0.9) 0%, rgba(0,0,0,0.95) 100%)',
+              boxShadow: 'inset 0 0 20px rgba(0,0,0,0.6), 0 0 15px rgba(0,0,0,0.3)',
             }}
           >
             {/* Middle metallic ring with prismatic reflections */}
-            <div 
+            <div
               className="absolute top-1/2 left-1/2 w-32 h-32 -translate-x-1/2 -translate-y-1/2 rounded-full"
               style={{
                 background: `
@@ -125,15 +129,15 @@ export function CDVisualizer({
                     rgba(180, 180, 190, 0.6) 100%
                   )
                 `,
-                boxShadow: 'inset 0 0 16px rgba(0,0,0,0.4)'
+                boxShadow: 'inset 0 0 16px rgba(0,0,0,0.4)',
               }}
             >
               {/* Inner transparent/clear ring - where CD meets player */}
-              <div 
+              <div
                 className="absolute top-1/2 left-1/2 w-16 h-16 -translate-x-1/2 -translate-y-1/2 rounded-full"
                 style={{
                   background: 'rgba(255,255,255,0.95)',
-                  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.15)'
+                  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.15)',
                 }}
               />
             </div>
@@ -141,7 +145,7 @@ export function CDVisualizer({
         </div>
 
         {/* Metallic CD base layer */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-10"
           style={{
             background: `
@@ -154,12 +158,12 @@ export function CDVisualizer({
               )
             `,
             mixBlendMode: 'multiply',
-            opacity: 0.6
+            opacity: 0.6,
           }}
         />
 
         {/* Radial light streaks - like reference image */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none opacity-60 z-20"
           style={{
             background: `
@@ -192,13 +196,15 @@ export function CDVisualizer({
               )
             `,
             mixBlendMode: 'overlay',
-            maskImage: 'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)',
-            WebkitMaskImage: 'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)'
+            maskImage:
+              'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)',
+            WebkitMaskImage:
+              'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)',
           }}
         />
-        
+
         {/* Multi-colored transparent refractions overlay */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none opacity-40 z-35"
           style={{
             background: `
@@ -222,13 +228,15 @@ export function CDVisualizer({
               )
             `,
             mixBlendMode: 'screen',
-            maskImage: 'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)',
-            WebkitMaskImage: 'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)'
+            maskImage:
+              'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)',
+            WebkitMaskImage:
+              'radial-gradient(circle, transparent 12%, black 15%, black 82%, transparent 85%)',
           }}
         />
 
         {/* Bright radial highlight from center */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-40"
           style={{
             background: `
@@ -240,12 +248,12 @@ export function CDVisualizer({
                 transparent 60%
               )
             `,
-            mixBlendMode: 'overlay'
+            mixBlendMode: 'overlay',
           }}
         />
 
         {/* Metallic overlay for entire CD */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-45"
           style={{
             background: `
@@ -257,12 +265,12 @@ export function CDVisualizer({
                 rgba(180,180,200,0.15) 100%
               )
             `,
-            mixBlendMode: 'multiply'
+            mixBlendMode: 'multiply',
           }}
         />
 
         {/* Additional metallic sheen */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-46"
           style={{
             background: `
@@ -275,12 +283,12 @@ export function CDVisualizer({
                 rgba(0,0,0,0.1) 100%
               )
             `,
-            mixBlendMode: 'overlay'
+            mixBlendMode: 'overlay',
           }}
         />
 
         {/* Radial light reflection */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-25"
           style={{
             background: `
@@ -292,12 +300,12 @@ export function CDVisualizer({
                 transparent 75%
               )
             `,
-            mixBlendMode: 'overlay'
+            mixBlendMode: 'overlay',
           }}
         />
 
         {/* Directional highlight */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-30"
           style={{
             background: `
@@ -310,27 +318,27 @@ export function CDVisualizer({
                 rgba(0,0,0,0.2) 100%
               )
             `,
-            mixBlendMode: 'soft-light'
+            mixBlendMode: 'soft-light',
           }}
         />
 
         {/* Edge beveling and depth */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-50"
           style={{
             boxShadow: `
               inset 0 0 0 1px rgba(255,255,255,0.6),
               inset 0 3px 6px rgba(255,255,255,0.4),
               inset 0 -3px 12px rgba(0,0,0,0.15)
-            `
+            `,
           }}
         />
 
         {/* Outer rim shadow */}
-        <div 
+        <div
           className="absolute inset-0 rounded-full pointer-events-none z-60"
           style={{
-            boxShadow: '0 0 0 1px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.25)'
+            boxShadow: '0 0 0 1px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.25)',
           }}
         />
       </div>
