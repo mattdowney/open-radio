@@ -42,11 +42,11 @@ export function VinylRecord({
       >
         {/* Spinning content */}
         <div
-          className={cn(
-            'absolute inset-0',
-            isPlaying && !isLoading && 'animate-spin-slow',
-          )}
-          style={{ willChange: 'transform' }}
+          className="absolute inset-0 animate-spin-slow"
+          style={{
+            willChange: 'transform',
+            animationPlayState: isPlaying && !isLoading ? 'running' : 'paused',
+          }}
         >
           {/* Subtle vinyl surface shading */}
           {/* Grooves (rotate with record) */}
@@ -116,7 +116,7 @@ export function VinylRecord({
                 className={cn(
                   'object-cover',
                   'transition-opacity duration-300',
-                  imageLoading ? 'opacity-100' : 'opacity-100',
+                  imageLoading ? 'opacity-100' : 'opacity-100'
                 )}
                 onLoad={() => setImageLoading(false)}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

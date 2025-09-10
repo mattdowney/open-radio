@@ -71,8 +71,33 @@ $hand: 'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS',
   font-family: "Geist Mono", "Space Mono", monospace;
 }
 
-/* Color Palette */
+/* CSS Variables for Theme System */
+:root {
+  /* Default theme (dark) - fallbacks */
+  --theme-primary: #FBFBFB;
+  --theme-secondary: #FF65D2;
+  --theme-background: #00020B;
+  --theme-surface: #2E2F35;
+  --theme-text: #FBFBFB;
+  --theme-textSecondary: #FBFBFB80;
+  --theme-accent: #FF5101;
+  --theme-vinyl: #1A1A1A;
+  --theme-cd: #C0C0C0;
+  --theme-visualizerGlow: #FF65D2;
+  --theme-transitionDuration: 300ms;
+  --theme-vinylSpeed: 2s;
+  --theme-cdSpeed: 1s;
+}
 
+/* Theme transition class */
+.theme-transitioning * {
+  transition: background-color var(--theme-transitionDuration) ease,
+              color var(--theme-transitionDuration) ease,
+              border-color var(--theme-transitionDuration) ease,
+              box-shadow var(--theme-transitionDuration) ease !important;
+}
+
+/* Legacy Color Palette (for backward compatibility) */
 $white: #FBFBFB;
 $pink: #FF65D2;
 $orange: #FF5101;
@@ -99,6 +124,8 @@ body {
   scrollbar-width: none;
   font-feature-settings: 'dlig' 1, 'ss04' 1;
   font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--theme-background);
+  color: var(--theme-text);
 }
 
 h1,
@@ -107,7 +134,8 @@ h3,
 h4,
 h5,
 h6 {
-  @apply text-white tracking-normal leading-[130%] font-polymath;
+  color: var(--theme-text);
+  @apply tracking-normal leading-[130%] font-polymath;
 }
 
 h1,
@@ -172,7 +200,8 @@ input,
 .paragraph,
 .newsletter-bonus-container,
 .bonus-container {
-  @apply text-white mb-0 text-base tracking-normal font-normal font-geist;
+  color: var(--theme-text);
+  @apply mb-0 text-base tracking-normal font-normal font-geist;
 
   a {
     @apply inline no-underline text-black duration-duration-fast ease-in-out font-medium;

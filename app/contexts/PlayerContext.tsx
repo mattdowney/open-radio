@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useRef,
-  ReactNode,
-} from 'react';
+import { createContext, useContext, useReducer, useRef, ReactNode } from 'react';
 import { YouTubePlayer } from '../types/player';
 
 export interface PlayerState {
@@ -154,9 +148,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     seekTo,
   };
 
-  return (
-    <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
-  );
+  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
 
 export function usePlayer() {

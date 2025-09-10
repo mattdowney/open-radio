@@ -41,7 +41,7 @@ All items from the quick wins checklist have been completed successfully. The re
 ### ✅ Configuration Improvements (30 minutes)
 **Make Playlist Configurable:**
 - [x] Replaced hardcoded `PLAYLIST_ID` in `RadioPlayer.tsx`
-- [x] Added `NEXT_PUBLIC_DEFAULT_PLAYLIST_ID` to environment variables
+- [x] Added `NEXT_PUBLIC_PLAYLIST_ID` to environment variables
 - [x] Added fallback playlist ID for demo purposes
 
 **Add Basic App Configuration:**

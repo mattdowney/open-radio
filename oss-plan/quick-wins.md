@@ -73,12 +73,12 @@ grep -r "mattdowney" app/ --include="*.ts" --include="*.tsx"
 
 ### Make Playlist Configurable
 - [ ] Replace hardcoded `PLAYLIST_ID` in `RadioPlayer.tsx`
-- [ ] Add `NEXT_PUBLIC_DEFAULT_PLAYLIST_ID` to environment variables
+- [ ] Add `NEXT_PUBLIC_PLAYLIST_ID` to environment variables
 - [ ] Add fallback playlist ID for demo purposes
 
 ```typescript
 // In RadioPlayer.tsx
-const PLAYLIST_ID = process.env.NEXT_PUBLIC_DEFAULT_PLAYLIST_ID || 'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
+const PLAYLIST_ID = process.env.NEXT_PUBLIC_PLAYLIST_ID || 'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
 ```
 
 ### Add Basic App Configuration

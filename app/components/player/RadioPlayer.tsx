@@ -4,17 +4,12 @@ import { useEffect, useCallback, useRef } from 'react';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useQueue } from '../../contexts/QueueContext';
 import { useUI } from '../../contexts/UIContext';
-import {
-  getYouTubeService,
-  YouTubeAPIError,
-} from '../../services/youtubeService';
+import { getYouTubeService, YouTubeAPIError } from '../../services/youtubeService';
 import { YouTubePlayerManager } from './YouTubePlayerManager';
 import { RadioLayout } from '../layout/RadioLayout';
 import { Track } from '../../types/track';
 
-const PLAYLIST_ID =
-  process.env.NEXT_PUBLIC_DEFAULT_PLAYLIST_ID ||
-  'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
+const PLAYLIST_ID = process.env.NEXT_PUBLIC_PLAYLIST_ID || 'PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx';
 
 export function RadioPlayer() {
   const initializingRef = useRef(false);
@@ -46,8 +41,7 @@ export function RadioPlayer() {
 
         // Validate initial tracks
         const initialTracks = videoIds.slice(0, 4);
-        const validatedTracks =
-          await youtubeService.validateTracks(initialTracks);
+        const validatedTracks = await youtubeService.validateTracks(initialTracks);
 
         if (validatedTracks.length > 0) {
           queueDispatch({
@@ -110,13 +104,12 @@ export function RadioPlayer() {
 
         // Validate tracks that aren't already validated (do this ONCE and reuse results)
         const unvalidatedIds = nextTrackIds.filter(
-          (id) => !queueState.validatedTracks.some((vt) => vt.id === id),
+          (id) => !queueState.validatedTracks.some((vt) => vt.id === id)
         );
 
         let newlyValidatedTracks: typeof queueState.validatedTracks = [];
         if (unvalidatedIds.length > 0) {
-          newlyValidatedTracks =
-            await youtubeService.validateTracks(unvalidatedIds);
+          newlyValidatedTracks = await youtubeService.validateTracks(unvalidatedIds);
           if (newlyValidatedTracks.length > 0) {
             queueDispatch({
               type: 'ADD_VALIDATED_TRACKS',
@@ -126,10 +119,7 @@ export function RadioPlayer() {
         }
 
         // Get all validated tracks (existing + newly validated)
-        const allValidatedTracks = [
-          ...queueState.validatedTracks,
-          ...newlyValidatedTracks,
-        ];
+        const allValidatedTracks = [...queueState.validatedTracks, ...newlyValidatedTracks];
 
         // Update upcoming tracks
         const upcomingTracks: Track[] = nextTrackIds
@@ -151,7 +141,7 @@ export function RadioPlayer() {
         console.error('Error updating queue:', error);
       }
     },
-    [queueState.playlist, queueState.validatedTracks, youtubeService],
+    [queueState.playlist, queueState.validatedTracks, youtubeService]
   );
 
   // Handle track transition
@@ -166,9 +156,7 @@ export function RadioPlayer() {
         }
 
         // Get or validate track details
-        let validatedTrack = queueState.validatedTracks.find(
-          (vt) => vt.id === trackId,
-        );
+        let validatedTrack = queueState.validatedTracks.find((vt) => vt.id === trackId);
         if (!validatedTrack) {
           const result = await youtubeService.validateTrack(trackId);
           if (!result) {
@@ -221,21 +209,14 @@ export function RadioPlayer() {
         }
       }
     },
-    [
-      queueState.playlist,
-      queueState.validatedTracks,
-      youtubeService,
-      queueDispatch,
-      updateQueue,
-    ],
+    [queueState.playlist, queueState.validatedTracks, youtubeService, queueDispatch, updateQueue]
   );
 
   // Handle track end (auto-advance)
   const handleTrackEnd = useCallback(async () => {
     // Do not block ENDED if transitioning flag lingers; try advance anyway
     try {
-      const nextIndex =
-        (queueState.currentTrackIndex + 1) % queueState.playlist.length;
+      const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
       const nextTrackId = queueState.playlist[nextIndex];
       if (nextTrackId) {
         await handleTrackTransition(nextTrackId);
@@ -244,28 +225,18 @@ export function RadioPlayer() {
       console.error('Error advancing to next track:', error);
       setError('Failed to advance to next track');
     }
-  }, [
-    queueState.currentTrackIndex,
-    queueState.playlist,
-    handleTrackTransition,
-    setError,
-  ]);
+  }, [queueState.currentTrackIndex, queueState.playlist, handleTrackTransition, setError]);
 
   // Player control handlers
   const handleNext = useCallback(() => {
     if (queueState.playlist.length > 0) {
-      const nextIndex =
-        (queueState.currentTrackIndex + 1) % queueState.playlist.length;
+      const nextIndex = (queueState.currentTrackIndex + 1) % queueState.playlist.length;
       const nextTrackId = queueState.playlist[nextIndex];
       if (nextTrackId) {
         handleTrackTransition(nextTrackId);
       }
     }
-  }, [
-    queueState.playlist,
-    queueState.currentTrackIndex,
-    handleTrackTransition,
-  ]);
+  }, [queueState.playlist, queueState.currentTrackIndex, handleTrackTransition]);
 
   const handlePrevious = useCallback(() => {
     if (queueState.playlist.length > 0) {
@@ -277,17 +248,13 @@ export function RadioPlayer() {
         handleTrackTransition(prevTrackId);
       }
     }
-  }, [
-    queueState.playlist,
-    queueState.currentTrackIndex,
-    handleTrackTransition,
-  ]);
+  }, [queueState.playlist, queueState.currentTrackIndex, handleTrackTransition]);
 
   const handleTrackSelect = useCallback(
     (trackId: string) => {
       handleTrackTransition(trackId);
     },
-    [handleTrackTransition],
+    [handleTrackTransition]
   );
 
   const handleError = useCallback((error: string) => {

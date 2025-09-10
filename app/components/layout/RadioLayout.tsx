@@ -7,7 +7,7 @@ import { appConfig } from '../../../config/app';
 import { usePlayer } from '../../contexts/PlayerContext';
 import { useUI } from '../../contexts/UIContext';
 import { ListenerCount } from '../media/ListenerCount';
-import { VinylRecord } from '../visualization/VinylRecord';
+import { DynamicVisualizer } from '../visualization/DynamicVisualizer';
 import { TrackRating } from '../media/TrackRating';
 import BlurredAlbumBackground from '../ui/BlurredAlbumBackground';
 import Loading from '../ui/Loading';
@@ -21,10 +21,7 @@ import {
 } from '@heroicons/react/20/solid';
 import { cn } from '../../lib/utils';
 import { MeshGradient } from '@paper-design/shaders-react';
-import {
-  extractColorsFromImage,
-  generateShaderColors,
-} from '../../utils/colorExtraction';
+import { extractColorsFromImage, generateShaderColors } from '../../utils/colorExtraction';
 
 interface RadioLayoutProps {
   isLoading: boolean;
@@ -66,9 +63,7 @@ export function RadioLayout({
     '#333333',
     '#ffffff',
   ]);
-  const [pendingColorExtraction, setPendingColorExtraction] = useState<
-    string | null
-  >(null);
+  const [pendingColorExtraction, setPendingColorExtraction] = useState<string | null>(null);
 
   // Delayed color extraction - only after track is playing and not transitioning
   useEffect(() => {
@@ -97,12 +92,7 @@ export function RadioLayout({
         };
       }
     }
-  }, [
-    currentTrack?.albumCoverUrl,
-    isPlaying,
-    isTransitioning,
-    pendingColorExtraction,
-  ]);
+  }, [currentTrack?.albumCoverUrl, isPlaying, isTransitioning, pendingColorExtraction]);
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = Number(event.target.value);
@@ -132,7 +122,7 @@ export function RadioLayout({
 
                 <div className="relative h-full flex items-center justify-center p-4 md:p-8 md:pb-24 pb-40">
                   <div className="w-full max-w-sm md:max-w-md">
-                    <VinylRecord
+                    <DynamicVisualizer
                       src={currentTrack.albumCoverUrl}
                       alt={currentTrack.title}
                       isPlaying={isPlaying}
@@ -163,7 +153,7 @@ export function RadioLayout({
                         onClick={onPrevious}
                         className={cn(
                           'text-white hover:text-white/75 transition-colors focus:outline-none p-2',
-                          isLoadingNext && 'opacity-50 cursor-not-allowed',
+                          isLoadingNext && 'opacity-50 cursor-not-allowed'
                         )}
                         disabled={isLoadingNext}
                         aria-label="Previous track"
@@ -260,8 +250,7 @@ export function RadioLayout({
                               onClick={onPrevious}
                               className={cn(
                                 'text-white hover:text-white/75 transition-colors focus:outline-none',
-                                isLoadingNext &&
-                                  'opacity-50 cursor-not-allowed',
+                                isLoadingNext && 'opacity-50 cursor-not-allowed'
                               )}
                               disabled={isLoadingNext}
                               aria-label="Previous track"
@@ -334,11 +323,7 @@ export function RadioLayout({
                     shouldFadeToBlack={isTransitioning}
                   />
                   <div className="absolute inset-0 z-10 mix-blend-overlay">
-                    <MeshGradient
-                      className="w-full h-full"
-                      colors={shaderColors}
-                      speed={0.8}
-                    />
+                    <MeshGradient className="w-full h-full" colors={shaderColors} speed={0.8} />
                   </div>
 
                   {/* Static dither grain overlay */}

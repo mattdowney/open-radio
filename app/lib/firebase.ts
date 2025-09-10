@@ -12,6 +12,16 @@ import {
 } from 'firebase/database';
 import { appConfig } from '@/config/app';
 
+// Types
+interface ListenerRecord {
+  timestamp: number;
+  id?: string;
+}
+
+interface FirebaseData {
+  [key: string]: ListenerRecord;
+}
+
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -45,7 +55,7 @@ function isFirebaseConfigured(): boolean {
     (key) =>
       firebaseConfig &&
       typeof firebaseConfig[key as keyof typeof firebaseConfig] === 'string' &&
-      firebaseConfig[key as keyof typeof firebaseConfig] !== '',
+      firebaseConfig[key as keyof typeof firebaseConfig] !== ''
   );
 
   return hasAllRequiredKeys;
@@ -62,8 +72,7 @@ let registeredClientId: string | null = null;
 
 // Use a shorter timeout in development to clean up stale entries faster
 // 5 minutes in milliseconds for development, 15 minutes for production
-const MAX_LISTENER_AGE =
-  process.env.NODE_ENV === 'development' ? 5 * 60 * 1000 : 15 * 60 * 1000;
+const MAX_LISTENER_AGE = process.env.NODE_ENV === 'development' ? 5 * 60 * 1000 : 15 * 60 * 1000;
 
 // Flag to track if we've already cleaned up stale entries
 let cleanupPerformed = false;
@@ -71,11 +80,7 @@ let cleanupPerformed = false;
 // Flag to track if firebase permissions are denied
 let permissionsDenied = false;
 
-if (
-  typeof window !== 'undefined' &&
-  appConfig.enableFirebase &&
-  isFirebaseConfigured()
-) {
+if (typeof window !== 'undefined' && appConfig.enableFirebase && isFirebaseConfigured()) {
   try {
     // Initialize only if not already initialized
     if (!getApps().length) {
@@ -103,7 +108,7 @@ if (
 
 // Add debugging utility to window in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  // @ts-ignore - We're adding debug utilities to the window object
+  // @ts-expect-error - We're adding debug utilities to the window object
   window.__firebaseDebug = {
     clearAllListeners: async () => {
       if (!database || !listenersRef) {
@@ -111,9 +116,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       }
       try {
         const snapshot = await get(listenersRef);
-        const count = snapshot.exists()
-          ? Object.keys(snapshot.val()).length
-          : 0;
+        const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
 
         // Clear all listeners
         await set(listenersRef, null);
@@ -122,14 +125,12 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         registeredClientId = null;
         permissionsDenied = false; // Reset permission denied flag
         const newId = trackListener();
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error clearing listeners:', error);
         if (error.toString().includes('permission_denied')) {
+          console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
           console.error(
-            '⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access',
-          );
-          console.error(
-            'Please update your Firebase Realtime Database rules to allow read/write access',
+            'Please update your Firebase Realtime Database rules to allow read/write access'
           );
           permissionsDenied = true;
         }
@@ -144,15 +145,11 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         }
         const data = snapshot.val();
         // Data logged in development only
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error logging listeners:', error);
         if (error.toString().includes('permission_denied')) {
-          console.error(
-            '⛔️ PERMISSION DENIED: Your Firebase rules are preventing read access',
-          );
-          console.error(
-            'Please update your Firebase Realtime Database rules to allow read access',
-          );
+          console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing read access');
+          console.error('Please update your Firebase Realtime Database rules to allow read access');
           permissionsDenied = true;
         }
       }
@@ -176,13 +173,11 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         setTimeout(() => {
           window.__firebaseDebug?.logListeners();
         }, 500);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error during forced heartbeat:', error);
         if (error.toString().includes('permission_denied')) {
           permissionsDenied = true;
-          console.error(
-            '⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access',
-          );
+          console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
         }
       }
     },
@@ -198,13 +193,9 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         const now = Date.now();
 
         // Count active (non-stale) listeners
-        const activeListeners = Object.entries<any>(data).filter(
-          ([_, record]) => {
-            return (
-              record.timestamp && now - record.timestamp < MAX_LISTENER_AGE
-            );
-          },
-        ).length;
+        const activeListeners = Object.entries<ListenerRecord>(data).filter(([_, record]) => {
+          return record.timestamp && now - record.timestamp < MAX_LISTENER_AGE;
+        }).length;
 
         // Data logged in development only
 
@@ -235,7 +226,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         setTimeout(async () => {
           await remove(testRef);
         }, 1000);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('❌ Error during test:', error);
       }
     },
@@ -256,15 +247,13 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
             if (snapshot.exists()) {
               const data = snapshot.val();
               const count = Object.keys(data).length;
-              Object.entries(data).forEach(([id, val]: [string, any]) => {});
+              Object.entries(data).forEach(([id, val]: [string, ListenerRecord]) => {});
             } else {
             }
           })
           .catch((error) => {
             if (error.toString().includes('permission_denied')) {
-              console.error(
-                '⛔️ PERMISSION DENIED: Please update your Firebase rules',
-              );
+              console.error('⛔️ PERMISSION DENIED: Please update your Firebase rules');
             }
           });
       }
@@ -299,7 +288,7 @@ async function forceCleanupAllStaleEntries() {
     let removedCount = 0;
 
     // Check each listener record
-    for (const [clientId, record] of Object.entries<any>(data)) {
+    for (const [clientId, record] of Object.entries<ListenerRecord>(data)) {
       // More aggressive cleanup in development - remove entries older than 2 minutes
       if (!record.timestamp || now - record.timestamp > TWO_MINUTES) {
         const staleRef = ref(database, `listeners/${clientId}`);
@@ -307,15 +296,11 @@ async function forceCleanupAllStaleEntries() {
         removedCount++;
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error during forced cleanup:', error);
     if (error.toString().includes('permission_denied')) {
-      console.error(
-        '⛔️ PERMISSION DENIED: Your Firebase rules are preventing delete access',
-      );
-      console.error(
-        'Please update your Firebase Realtime Database rules to allow write access',
-      );
+      console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing delete access');
+      console.error('Please update your Firebase Realtime Database rules to allow write access');
       permissionsDenied = true;
     }
   }
@@ -334,7 +319,7 @@ async function cleanupStaleListeners() {
     let staleCount = 0;
 
     // Check each listener record
-    for (const [clientId, record] of Object.entries<any>(data)) {
+    for (const [clientId, record] of Object.entries<ListenerRecord>(data)) {
       // If the timestamp is older than MAX_LISTENER_AGE, remove it
       if (record.timestamp && now - record.timestamp > MAX_LISTENER_AGE) {
         const staleRef = ref(database, `listeners/${clientId}`);
@@ -345,7 +330,7 @@ async function cleanupStaleListeners() {
 
     if (staleCount > 0) {
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error cleaning up stale listeners:', error);
     if (error.toString().includes('permission_denied')) {
       permissionsDenied = true;
@@ -395,12 +380,8 @@ export function trackListener() {
       console.error('Error registering listener:', error);
       if (error.toString().includes('permission_denied')) {
         permissionsDenied = true;
-        console.error(
-          '⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access',
-        );
-        console.error(
-          'Please run window.__firebaseDebug.fixPermissionIssue() for instructions',
-        );
+        console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
+        console.error('Please run window.__firebaseDebug.fixPermissionIssue() for instructions');
       }
     });
 
@@ -458,9 +439,7 @@ export function trackListener() {
  * @param callback Function to call with the updated count
  * @returns Unsubscribe function
  */
-export function getListenerCount(
-  callback: (count: number) => void,
-): () => void {
+export function getListenerCount(callback: (count: number) => void): () => void {
   if (!database || !listenersRef) {
     console.error('Firebase not initialized');
     callback(0);
@@ -484,7 +463,7 @@ export function getListenerCount(
       const totalEntries = Object.keys(data).length;
 
       // Then, filter for active (non-stale) entries
-      const activeEntries = Object.entries<any>(data).filter(([id, record]) => {
+      const activeEntries = Object.entries<ListenerRecord>(data).filter(([id, record]) => {
         const age = now - record.timestamp;
         const isActive = record.timestamp && age < MAX_LISTENER_AGE;
         return isActive;
@@ -495,9 +474,7 @@ export function getListenerCount(
 
       // Skip any changes if we've detected permission issues
       if (permissionsDenied) {
-        console.warn(
-          '⚠️ Permission issues detected - listener count may be inaccurate',
-        );
+        console.warn('⚠️ Permission issues detected - listener count may be inaccurate');
         callback(0);
         return;
       }
@@ -509,15 +486,13 @@ export function getListenerCount(
       console.error('Error getting listener count:', error);
       if (error.toString().includes('permission_denied')) {
         console.error(
-          '⛔️ PERMISSION DENIED: Your Firebase rules are preventing read access to listeners',
+          '⛔️ PERMISSION DENIED: Your Firebase rules are preventing read access to listeners'
         );
-        console.error(
-          'Please update your Firebase Realtime Database rules to allow read access',
-        );
+        console.error('Please update your Firebase Realtime Database rules to allow read access');
         permissionsDenied = true;
       }
       callback(0);
-    },
+    }
   );
 
   // Return unsubscribe function

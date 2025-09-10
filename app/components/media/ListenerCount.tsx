@@ -4,9 +4,11 @@
 // import { Badge } from '@/app/components/ui/badge';
 import { getListenerCount, trackListener } from '@/app/lib/firebase';
 import { appConfig } from '@/config/app';
+import { getConfigSync } from '@/config/configReader';
 import { cn } from '@/app/lib/utils';
-import { Headphones } from 'lucide-react';
+import { Headphones, Palette } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { DesignOptionsModal } from '../ui/DesignOptionsModal';
 
 // Maintain the debug interface for potential future debugging
 declare global {
@@ -48,14 +50,7 @@ function LoadingSpinner() {
       fill="none"
       viewBox="0 0 24 24"
     >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="3"
-      />
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
       <path
         className="opacity-75"
         fill="currentColor"
@@ -83,6 +78,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const [listenerCount, setListenerCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const registrationRef = useRef<boolean>(false);
   const unsubscribeRef = useRef<() => void>(() => {});
   const callbackExecutedRef = useRef<boolean>(false);
@@ -91,9 +87,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const pendingCountRef = useRef<number | null>(null);
   const pendingCountTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countStabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countHistoryRef = useRef<Array<{ count: number; timestamp: number }>>(
-    [],
-  );
+  const countHistoryRef = useRef<Array<{ count: number; timestamp: number }>>([]);
   const stableCountAchievedRef = useRef<boolean>(false);
   const textRef = useRef<HTMLSpanElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -119,7 +113,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   const getMaxRecentCount = (timeWindow = 10000) => {
     const now = Date.now();
     const recentCounts = countHistoryRef.current.filter(
-      (entry) => now - entry.timestamp < timeWindow,
+      (entry) => now - entry.timestamp < timeWindow
     );
 
     if (recentCounts.length === 0) return null;
@@ -166,10 +160,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
       // Only persist counts that are > 0 and have passed the stability check
       if (count > 0 && stableCountAchievedRef.current) {
         localStorage.setItem(LISTENER_COUNT_STORAGE_KEY, count.toString());
-        localStorage.setItem(
-          LISTENER_COUNT_TIMESTAMP_KEY,
-          Date.now().toString(),
-        );
+        localStorage.setItem(LISTENER_COUNT_TIMESTAMP_KEY, Date.now().toString());
         localStorage.setItem(COUNT_INITIALIZED_KEY, 'true');
       }
     } catch (e) {
@@ -186,11 +177,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     if (newCount >= currentCountRef.current) return true;
 
     // Special case: We're in the stability period and getting a suspicious drop to 1
-    if (
-      !stableCountAchievedRef.current &&
-      newCount === 1 &&
-      currentCountRef.current > 1
-    ) {
+    if (!stableCountAchievedRef.current && newCount === 1 && currentCountRef.current > 1) {
       return false;
     }
 
@@ -233,10 +220,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     const now = Date.now();
 
     // If immediate or if it's been a while since last update, apply right away
-    if (
-      immediate ||
-      now - lastCountTimestampRef.current > COUNT_DEBOUNCE_TIME * 2
-    ) {
+    if (immediate || now - lastCountTimestampRef.current > COUNT_DEBOUNCE_TIME * 2) {
       applyCountUpdate(newCount);
       return;
     }
@@ -281,12 +265,9 @@ export function ListenerCount({ className }: ListenerCountProps) {
   // Check for updates from other tabs
   const checkForStorageUpdates = () => {
     try {
-      const initialized =
-        localStorage.getItem(COUNT_INITIALIZED_KEY) === 'true';
+      const initialized = localStorage.getItem(COUNT_INITIALIZED_KEY) === 'true';
       const storedCount = localStorage.getItem(LISTENER_COUNT_STORAGE_KEY);
-      const storedTimestamp = localStorage.getItem(
-        LISTENER_COUNT_TIMESTAMP_KEY,
-      );
+      const storedTimestamp = localStorage.getItem(LISTENER_COUNT_TIMESTAMP_KEY);
 
       // Only use stored count if it's initialized, valid, and recent
       if (initialized && storedCount && storedTimestamp) {
@@ -342,10 +323,10 @@ export function ListenerCount({ className }: ListenerCountProps) {
       console.log('🔥 Production Firebase Debug:', {
         enableFirebase: appConfig.enableFirebase,
         envVar: process.env.NEXT_PUBLIC_FIREBASE_ENABLED,
-        isProduction: process.env.NODE_ENV === 'production'
+        isProduction: process.env.NODE_ENV === 'production',
       });
     }
-    
+
     // If Firebase is disabled, show LIVE badge immediately
     if (!appConfig.enableFirebase) {
       setListenerCount(null); // null will show LIVE badge
@@ -402,21 +383,12 @@ export function ListenerCount({ className }: ListenerCountProps) {
 
         // Handle drop to "1" that happens right after registration
         const timeSinceRegister = Date.now() - registerTimeRef.current;
-        if (
-          count === 1 &&
-          preRegisterCount &&
-          preRegisterCount > 1 &&
-          timeSinceRegister < 2000
-        ) {
+        if (count === 1 && preRegisterCount && preRegisterCount > 1 && timeSinceRegister < 2000) {
           return;
         }
 
         // Immediately after registration, if we had a higher count before, prefer it
-        if (
-          !stableCountAchievedRef.current &&
-          preRegisterCount &&
-          preRegisterCount > count
-        ) {
+        if (!stableCountAchievedRef.current && preRegisterCount && preRegisterCount > count) {
           scheduleCountUpdate(preRegisterCount);
         } else {
           // Schedule the update (debounced)
@@ -495,8 +467,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
       if (
         verifiedCount !== null &&
         verifiedCount > 1 &&
-        (currentCountRef.current === null ||
-          verifiedCount > currentCountRef.current)
+        (currentCountRef.current === null || verifiedCount > currentCountRef.current)
       ) {
         scheduleCountUpdate(verifiedCount, true);
       }
@@ -545,10 +516,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
   // Listen for localStorage events from other tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (
-        e.key === LISTENER_COUNT_STORAGE_KEY ||
-        e.key === COUNT_INITIALIZED_KEY
-      ) {
+      if (e.key === LISTENER_COUNT_STORAGE_KEY || e.key === COUNT_INITIALIZED_KEY) {
         checkForStorageUpdates();
       } else if (e.key === FIRST_TAB_KEY && e.newValue === null) {
         checkIfFirstTab();
@@ -620,16 +588,18 @@ export function ListenerCount({ className }: ListenerCountProps) {
   }, []);
 
   // Calculate display count and text
+  const config = getConfigSync();
   const isLiveMode = !appConfig.enableFirebase;
-  const displayCount =
-    typeof listenerCount === 'number' ? Math.max(1, listenerCount) : 1;
-  const displayText = isLiveMode ? 'LIVE' : `${displayCount} listening now`;
+  const displayCount = typeof listenerCount === 'number' ? Math.max(1, listenerCount) : 1;
+  const displayText = isLiveMode ? config.ui.liveText : `${displayCount} ${config.ui.listenerText}`;
+  const fullText = `${displayText} | Style`;
 
   // Calculate badge width
   const getTextWidth = () => {
     const baseWidth = 32; // Icon area
-    const countTextWidth = displayText.length * 6.2; // Approximate width per character
-    return Math.ceil(baseWidth + countTextWidth);
+    const countTextWidth = fullText.length * 6.2; // Approximate width per character
+    const styleIconWidth = 20; // Palette icon width
+    return Math.ceil(baseWidth + countTextWidth + styleIconWidth);
   };
 
   // Badge width with transition
@@ -639,7 +609,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
     <div
       className={cn(
         'relative h-8 transition-all duration-500 ease-out overflow-visible',
-        className,
+        className
       )}
       style={{
         width: `${badgeWidth}px`,
@@ -656,7 +626,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
           'border-none text-white/90 text-sm font-regular',
           'transition-all duration-300 ease-out',
           isLoading ? 'justify-center' : 'justify-start',
-          isExpanded ? 'pl-3 pr-3' : 'w-8 p-0',
+          isExpanded ? 'pl-3 pr-3' : 'w-8 p-0'
         )}
       >
         {/* The loading icon and spinner container */}
@@ -664,7 +634,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
           className={cn(
             'relative flex items-center justify-center',
             'transition-all duration-300 ease-out',
-            isExpanded && !isLoading ? 'mr-1.5' : 'w-full h-full',
+            isExpanded && !isLoading ? 'mr-1.5' : 'w-full h-full'
           )}
         >
           {/* The rotating spinner around the icon (only when loading) */}
@@ -687,7 +657,7 @@ export function ListenerCount({ className }: ListenerCountProps) {
             strokeWidth={2.5}
             className={cn(
               'text-white/90 z-10 transition-all duration-300',
-              isLoading ? 'scale-105' : 'scale-105',
+              isLoading ? 'scale-105' : 'scale-105'
             )}
           />
         </div>
@@ -696,8 +666,8 @@ export function ListenerCount({ className }: ListenerCountProps) {
         {!isLoading && (
           <div
             className={cn(
-              'overflow-hidden whitespace-nowrap',
-              'transition-all ease-out duration-300',
+              'overflow-hidden whitespace-nowrap flex items-center',
+              'transition-all ease-out duration-300'
             )}
             style={{
               maxWidth: isExpanded ? '100%' : '0',
@@ -706,6 +676,14 @@ export function ListenerCount({ className }: ListenerCountProps) {
             }}
           >
             <span ref={textRef}>{displayText}</span>
+            <span className="mx-2 opacity-50">|</span>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-1 hover:opacity-80 transition-opacity duration-200"
+            >
+              <Palette size={12} />
+              <span>Style</span>
+            </button>
           </div>
         )}
       </div>
@@ -718,6 +696,9 @@ export function ListenerCount({ className }: ListenerCountProps) {
           }
         }
       `}</style>
+
+      {/* Design Options Modal */}
+      <DesignOptionsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

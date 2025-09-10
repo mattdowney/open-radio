@@ -41,12 +41,7 @@ export function CompactDisc({
         style={{ isolation: 'isolate' }}
       >
         {/* Spinning content */}
-        <div
-          className={cn(
-            'absolute inset-0',
-            isPlaying && !isLoading && 'animate-spin-slow',
-          )}
-        >
+        <div className={cn('absolute inset-0', isPlaying && !isLoading && 'animate-spin-slow')}>
           {/* CD surface - iridescent rainbow effect */}
           <div
             className="absolute inset-0 rounded-full"
@@ -151,7 +146,7 @@ export function CompactDisc({
                 className={cn(
                   'object-cover',
                   'transition-opacity duration-300',
-                  imageLoading ? 'opacity-100' : 'opacity-100',
+                  imageLoading ? 'opacity-100' : 'opacity-100'
                 )}
                 onLoad={() => setImageLoading(false)}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -186,8 +181,7 @@ export function CompactDisc({
         <div
           className="absolute inset-0 pointer-events-none rounded-full"
           style={{
-            boxShadow:
-              'inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2)',
+            boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2)',
           }}
         />
 

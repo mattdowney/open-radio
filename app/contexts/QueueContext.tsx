@@ -67,9 +67,7 @@ function queueReducer(state: QueueState, action: QueueAction): QueueState {
     case 'ADD_VALIDATED_TRACKS':
       // Avoid duplicates when adding validated tracks
       const existingIds = new Set(state.validatedTracks.map((vt) => vt.id));
-      const newValidatedTracks = action.payload.filter(
-        (vt) => !existingIds.has(vt.id),
-      );
+      const newValidatedTracks = action.payload.filter((vt) => !existingIds.has(vt.id));
       return {
         ...state,
         validatedTracks: [...state.validatedTracks, ...newValidatedTracks],
@@ -85,9 +83,7 @@ function queueReducer(state: QueueState, action: QueueAction): QueueState {
       return { ...state, isTransitioning: action.payload };
 
     case 'REMOVE_TRACK_FROM_PLAYLIST':
-      const filteredPlaylist = state.playlist.filter(
-        (id) => id !== action.payload,
-      );
+      const filteredPlaylist = state.playlist.filter((id) => id !== action.payload);
       // Adjust current index if needed
       const removedIndex = state.playlist.indexOf(action.payload);
       const newIndex =
@@ -98,16 +94,9 @@ function queueReducer(state: QueueState, action: QueueAction): QueueState {
       return {
         ...state,
         playlist: filteredPlaylist,
-        currentTrackIndex: Math.max(
-          0,
-          Math.min(newIndex, filteredPlaylist.length - 1),
-        ),
-        validatedTracks: state.validatedTracks.filter(
-          (vt) => vt.id !== action.payload,
-        ),
-        upcomingTracks: state.upcomingTracks.filter(
-          (track) => track.id !== action.payload,
-        ),
+        currentTrackIndex: Math.max(0, Math.min(newIndex, filteredPlaylist.length - 1)),
+        validatedTracks: state.validatedTracks.filter((vt) => vt.id !== action.payload),
+        upcomingTracks: state.upcomingTracks.filter((track) => track.id !== action.payload),
       };
 
     case 'ADVANCE_TO_NEXT_TRACK':
@@ -122,8 +111,7 @@ function queueReducer(state: QueueState, action: QueueAction): QueueState {
 
     case 'GO_TO_PREVIOUS_TRACK':
       const prevIndex =
-        (state.currentTrackIndex - 1 + state.playlist.length) %
-        state.playlist.length;
+        (state.currentTrackIndex - 1 + state.playlist.length) % state.playlist.length;
       return {
         ...state,
         currentTrackIndex: prevIndex,
@@ -201,9 +189,7 @@ export function QueueProvider({ children }: { children: ReactNode }) {
     updateUpcomingTracks,
   };
 
-  return (
-    <QueueContext.Provider value={value}>{children}</QueueContext.Provider>
-  );
+  return <QueueContext.Provider value={value}>{children}</QueueContext.Provider>;
 }
 
 export function useQueue() {

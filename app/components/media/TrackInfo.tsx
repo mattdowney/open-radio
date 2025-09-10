@@ -48,8 +48,7 @@ export function TrackInfo({
   useEffect(() => {
     const checkOverflow = () => {
       if (containerRef.current && textRef.current) {
-        const needsAnimation =
-          textRef.current.scrollWidth > containerRef.current.clientWidth;
+        const needsAnimation = textRef.current.scrollWidth > containerRef.current.clientWidth;
         setNeedsMarquee(needsAnimation);
       }
     };
@@ -96,7 +95,7 @@ export function TrackInfo({
       className={cn(
         'relative overflow-hidden',
         'after:absolute after:right-0 after:top-0 after:h-full after:w-8',
-        className,
+        className
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -131,7 +130,7 @@ export function TrackInfo({
           className={cn(
             textStyles,
             'truncate transition-opacity duration-200 font-normal',
-            needsMarquee && shouldAnimate ? 'opacity-0' : 'opacity-100',
+            needsMarquee && shouldAnimate ? 'opacity-0' : 'opacity-100'
           )}
         >
           {formattedTitle}
@@ -142,17 +141,11 @@ export function TrackInfo({
           <div
             className={cn(
               'absolute inset-0 transition-all duration-200',
-              'opacity-100 translate-x-0',
+              'opacity-100 translate-x-0'
             )}
             style={{ transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)' }}
           >
-            <Marquee
-              gradient={false}
-              speed={40}
-              delay={0}
-              className={textStyles}
-              play={true}
-            >
+            <Marquee gradient={false} speed={40} delay={0} className={textStyles} play={true}>
               <span className="pr-8">{formattedTitle}</span>
             </Marquee>
           </div>

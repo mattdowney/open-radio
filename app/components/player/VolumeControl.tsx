@@ -4,11 +4,7 @@ interface VolumeControlProps {
   className?: string;
 }
 
-export function VolumeControl({
-  volume,
-  onVolumeChange,
-  className = '',
-}: VolumeControlProps) {
+export function VolumeControl({ volume, onVolumeChange, className = '' }: VolumeControlProps) {
   return (
     <div className={`flex items-center space-x-3 px-1 ${className}`}>
       <button

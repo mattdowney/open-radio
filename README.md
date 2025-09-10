@@ -1,30 +1,30 @@
 # Open Radio 🎵
 
-> **Note**: This project is currently transitioning to open source.
-> Comprehensive documentation and setup guides are coming soon!
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2.32-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-blue)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-blue)](https://react.dev/)
 
-A beautiful radio application built with Next.js, React, and TypeScript.
+A beautiful, modern radio application that brings the classic radio experience to the web with stunning vinyl record visualizations, real-time listener counts, and seamless music streaming.
 
-## Current Status
-- ✅ Core functionality complete
-- 🚧 Open source preparation in progress
-- 📚 Documentation being enhanced
-- 🎯 Community features planned
+> **🚀 Now Open Source!** Open Radio has been transformed from a personal project into a community-driven open source application. We welcome contributors of all skill levels!
 
-## Features
+## ✨ Features
 
-- 🎵 Seamless music streaming using YouTube as a source
-- 🎨 Beautiful blurred album art backgrounds with dynamic color extraction
-- 👥 Real-time listener count showing how many people are tuned in
-- 💿 Gorgeous vinyl record visualization with realistic animations
-- 📱 Responsive design that works on all devices
-- ⚡ Fast, modern Next.js 14 architecture with TypeScript
+- 🎵 **Seamless Music Streaming** - YouTube integration for unlimited music access
+- 💿 **Beautiful Vinyl Visualization** - Realistic spinning vinyl records with album art
+- 👥 **Real-time Listener Count** - See how many people are tuning in live
+- 🎨 **Dynamic Album Backgrounds** - Blurred album art backgrounds with color extraction
+- 📱 **Fully Responsive** - Perfect experience on desktop, tablet, and mobile
+- ⚙️ **Highly Configurable** - Customize everything via environment variables
+- 🔥 **Firebase Integration** - Optional real-time features and analytics
+- 🎭 **Custom Branding** - Make it your own with custom logos and themes
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/your-username/open-radio.git
 cd open-radio
 
 # Install dependencies
@@ -34,65 +34,200 @@ npm install
 cp .env.local.example .env.local
 # Edit .env.local with your API keys
 
-# Start development server
+# Start the development server
 npm run dev
 ```
 
-## Configuration
+Open [http://localhost:3000](http://localhost:3000) to see your radio in action!
 
-The app is highly configurable through environment variables:
+## 📸 Screenshots
+
+> **Note**: Screenshots coming soon! The app features beautiful vinyl record animations, dynamic backgrounds, and a clean, modern interface.
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 14](https://nextjs.org/) with App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **UI Library**: [React 18](https://react.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Music Source**: [YouTube API](https://developers.google.com/youtube/v3)
+- **Database**: [Firebase Realtime Database](https://firebase.google.com/products/realtime-database) (optional)
+- **Analytics**: [Vercel Analytics](https://vercel.com/analytics) (optional)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+
+## 📋 Prerequisites
+
+- **Node.js** 22.0.0 or higher
+- **npm** or **yarn**
+- **YouTube API Key** (required)
+- **Firebase Project** (optional, for real-time features)
+
+## 🔧 Installation & Setup
+
+### 1. Clone and Install
 
 ```bash
-# App Identity
-NEXT_PUBLIC_APP_NAME=Open Radio
-NEXT_PUBLIC_APP_DESCRIPTION=A beautiful radio experience
-
-# YouTube Integration
-NEXT_PUBLIC_YOUTUBE_API_KEY=your_api_key
-NEXT_PUBLIC_DEFAULT_PLAYLIST_ID=your_playlist_id
-
-# Optional Features
-NEXT_PUBLIC_ENABLE_ANALYTICS=false
-NEXT_PUBLIC_ENABLE_FIREBASE=true
-
-# Custom Branding
-NEXT_PUBLIC_LOGO_URL=/assets/logo.svg
-NEXT_PUBLIC_BRANDING_LINK_URL=https://your-site.com
+git clone https://github.com/your-username/open-radio.git
+cd open-radio
+npm install
 ```
 
-See `.env.local.example` for all available options.
+### 2. Environment Configuration
 
-## Firebase Setup for Real-Time Features
+Copy the example environment file:
 
-The real-time listener count requires Firebase Realtime Database.
+```bash
+cp .env.local.example .env.local
+```
 
-For complete setup instructions, see [Firebase Setup Guide](./docs/FIREBASE_SETUP.md).
+### 3. Required API Keys
 
-## Tech Stack
+**YouTube API Key** (Required):
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable YouTube Data API v3
+4. Create credentials (API Key)
+5. Add to `.env.local` as `NEXT_PUBLIC_YOUTUBE_API_KEY`
 
-- **Next.js 14.1.3** with App Router
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling
-- **YouTube API** for music streaming
-- **Firebase Realtime Database** for live features
-- **Framer Motion** for smooth animations
-- **WebGL Shaders** for visual effects
+**Firebase Setup** (Optional):
+1. Create a [Firebase project](https://console.firebase.google.com/)
+2. Add a web app to get configuration
+3. Add Firebase config to `.env.local`
+4. Set `NEXT_PUBLIC_FIREBASE_ENABLED=true`
 
-## License
+See [docs/SETUP.md](./docs/SETUP.md) for detailed setup instructions.
 
-MIT
+### 4. Start Development
 
-## Learn More
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Your radio will be running at [http://localhost:3000](http://localhost:3000)!
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## ⚙️ Configuration
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+Open Radio is highly configurable through environment variables:
 
-## Deploy on Vercel
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `NEXT_PUBLIC_APP_NAME` | Your radio station name | "Open Radio" | No |
+| `NEXT_PUBLIC_APP_DESCRIPTION` | Station description | "A beautiful radio experience" | No |
+| `NEXT_PUBLIC_YOUTUBE_API_KEY` | YouTube API key for music | - | **Yes** |
+| `NEXT_PUBLIC_PLAYLIST_ID` | Default YouTube playlist | Demo playlist | No |
+| `NEXT_PUBLIC_FIREBASE_ENABLED` | Enable Firebase features | `false` | No |
+| `NEXT_PUBLIC_BRANDING_ENABLED` | Show custom branding | `true` | No |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See [.env.local.example](./.env.local.example) for all available options.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## 🏗️ Architecture
+
+Open Radio follows a clean, modular architecture:
+
+```
+app/
+├── components/
+│   ├── player/          # Music player components
+│   ├── visualization/   # Vinyl record & album art
+│   ├── media/          # Track info & metadata
+│   ├── layout/         # App layout components
+│   └── ui/             # Reusable UI components
+├── contexts/           # React context for state management
+├── services/          # External API services
+└── lib/              # Utility functions
+
+config/               # Configuration management
+docs/                # Documentation
+```
+
+For detailed architecture information, see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+
+## 🧪 Development
+
+### Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+```
+
+### Code Style
+
+- Use TypeScript for all new code
+- Follow existing component patterns  
+- Run `npm run lint` before committing
+- Use conventional commit messages
+
+## 📚 Documentation
+
+- [**Setup Guide**](./docs/SETUP.md) - Detailed setup instructions
+- [**Architecture**](./docs/ARCHITECTURE.md) - Technical architecture overview
+- [**Contributing**](./CONTRIBUTING.md) - How to contribute to the project
+- [**Troubleshooting**](./docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [**Firebase Setup**](./docs/FIREBASE_SETUP.md) - Firebase integration guide
+- [**Deployment**](./docs/DEPLOYMENT.md) - Deployment instructions
+
+## 🤝 Contributing
+
+We welcome contributions from developers of all skill levels! Whether you're fixing bugs, adding features, improving documentation, or sharing ideas, your contributions are valued.
+
+**Quick Contribution Guide:**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests and linting (`npm run lint`)
+5. Commit changes (`git commit -m 'Add amazing feature'`)
+6. Push to branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+
+## 🐛 Bug Reports & Feature Requests
+
+- **Bug Reports**: [Create an issue](https://github.com/your-username/open-radio/issues/new?template=bug_report.md)
+- **Feature Requests**: [Request a feature](https://github.com/your-username/open-radio/issues/new?template=feature_request.md)
+- **Questions**: [Start a discussion](https://github.com/your-username/open-radio/discussions)
+
+## 🚀 Deployment
+
+Open Radio can be deployed on various platforms:
+
+- **Vercel** (Recommended) - One-click deployment
+- **Netlify** - Static site deployment
+- **Docker** - Containerized deployment
+- **Self-hosted** - On your own server
+
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for platform-specific instructions.
+
+## 📈 Roadmap
+
+- [ ] **v1.0**: Stable release with comprehensive documentation
+- [ ] **v1.1**: Plugin system for custom music sources
+- [ ] **v1.2**: Advanced theming and customization
+- [ ] **v1.3**: Multi-room/multi-station support
+- [ ] **v2.0**: Social features and user accounts
+
+See [GitHub Projects](https://github.com/your-username/open-radio/projects) for detailed roadmap.
+
+## 🙏 Acknowledgments
+
+- **YouTube API** for music streaming capabilities
+- **Firebase** for real-time features
+- **Next.js team** for the amazing framework
+- **All contributors** who help make Open Radio better
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 💖 Support
+
+If you find Open Radio useful, consider:
+- ⭐ Starring the repository
+- 🐛 Reporting bugs or requesting features
+- 🤝 Contributing code or documentation  
+- 💬 Sharing with others who might find it useful
+
+---

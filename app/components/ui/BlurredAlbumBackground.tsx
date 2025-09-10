@@ -47,17 +47,15 @@ const BlurredAlbumBackground = ({
   }, [albumCoverUrl, displayUrl, showBlack, isTrackReady]);
 
   return (
-    <div
-      className={`relative w-full h-full overflow-hidden ${className || ''}`}
-    >
+    <div className={`relative w-full h-full overflow-hidden ${className || ''}`}>
       {/* Custom keyframe animation for scale + rotate */}
       <style jsx>{`
         @keyframes scaleAndSpin {
           from {
-            transform: scale(2) rotate(0deg);
+            transform: scale(3) rotate(0deg);
           }
           to {
-            transform: scale(2) rotate(360deg);
+            transform: scale(3) rotate(360deg);
           }
         }
       `}</style>
@@ -66,12 +64,7 @@ const BlurredAlbumBackground = ({
       <svg className="absolute w-0 h-0" aria-hidden="true">
         <defs>
           <filter id="album-noise-filter">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.9"
-              numOctaves="4"
-              seed="15"
-            />
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="15" />
             <feColorMatrix type="saturate" values="0" />
             <feComponentTransfer>
               <feFuncA
@@ -107,7 +100,7 @@ const BlurredAlbumBackground = ({
             key={displayUrl}
             className="absolute inset-0 w-full h-full"
             style={{
-              filter: `blur(${blurAmount}px) brightness(1.4) saturate(1.3)`,
+              filter: `blur(${blurAmount}px) brightness(1.1) saturate(1.5)`,
               willChange: 'opacity',
             }}
             initial={{ opacity: 0 }}
@@ -123,7 +116,7 @@ const BlurredAlbumBackground = ({
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
               style={{
-                animation: 'scaleAndSpin 60s linear infinite',
+                animation: 'scaleAndSpin 90s linear infinite',
                 willChange: 'transform',
               }}
             />

@@ -36,11 +36,11 @@ const Star = memo(
       <StarSolid
         className={cn(
           'w-3.5 h-3.5 transition-colors duration-duration-fast',
-          isActive ? 'text-white' : 'text-white/20',
+          isActive ? 'text-white' : 'text-white/20'
         )}
       />
     </button>
-  ),
+  )
 );
 
 Star.displayName = 'Star';
@@ -50,11 +50,7 @@ export const TrackRating = memo(function TrackRating({
   className,
   isLoading = false,
 }: TrackRatingProps) {
-  const {
-    localRating,
-    isLoading: isRatingLoading,
-    submitRating,
-  } = useTrackRating(trackId);
+  const { localRating, isLoading: isRatingLoading, submitRating } = useTrackRating(trackId);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
 
   const handleHover = useCallback((value: number | null) => {
@@ -65,7 +61,7 @@ export const TrackRating = memo(function TrackRating({
     (value: number) => {
       submitRating(value);
     },
-    [submitRating],
+    [submitRating]
   );
 
   if (isLoading) {

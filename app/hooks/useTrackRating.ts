@@ -51,10 +51,7 @@ export const useTrackRating = (trackId: string) => {
         const data = await response.json();
         setState((prev) => {
           // Only update if the data has actually changed
-          if (
-            prev.globalRating !== data.averageRating ||
-            prev.totalRatings !== data.totalRatings
-          ) {
+          if (prev.globalRating !== data.averageRating || prev.totalRatings !== data.totalRatings) {
             return {
               ...prev,
               globalRating: data.averageRating,
@@ -73,7 +70,7 @@ export const useTrackRating = (trackId: string) => {
         }));
       }
     },
-    [trackId],
+    [trackId]
   );
 
   // Load global rating and set up polling
@@ -149,7 +146,7 @@ export const useTrackRating = (trackId: string) => {
         }));
       }
     },
-    [trackId],
+    [trackId]
   );
 
   return {

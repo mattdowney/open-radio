@@ -1,0 +1,37 @@
+name: ✨ Feature Request
+description: Suggest a new feature for Open Radio
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Description
+      description: What problem does this solve?
+      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+      
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: What would you like to happen?
+      placeholder: A clear and concise description of what you want to happen
+      
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: What alternatives have you considered?
+      placeholder: A clear and concise description of any alternative solutions or features you've considered
+      
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: How would you use this feature?
+      placeholder: Describe specific scenarios where this feature would be useful
+      
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context or screenshots about the feature request here

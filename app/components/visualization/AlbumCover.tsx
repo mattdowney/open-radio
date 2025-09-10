@@ -40,7 +40,7 @@ export function AlbumCover({
         className={cn(
           'relative aspect-square w-full',
           size === 'lg' ? 'rounded-lg' : 'rounded-md',
-          className,
+          className
         )}
       >
         <Skeleton className="absolute inset-0 rounded-[inherit]" />
@@ -53,7 +53,7 @@ export function AlbumCover({
       className={cn(
         'relative aspect-square w-full bg-black overflow-hidden',
         size === 'lg' ? 'rounded-xl' : 'rounded-md',
-        className,
+        className
       )}
       style={{
         willChange: 'transform, opacity',
@@ -69,7 +69,7 @@ export function AlbumCover({
         className={cn(
           'object-cover rounded-[inherit]',
           'transition-all duration-300 ease-in-out',
-          imageLoading ? 'scale-[105%] opacity-0' : 'scale-[102%] opacity-100',
+          imageLoading ? 'scale-[105%] opacity-0' : 'scale-[102%] opacity-100'
         )}
         style={{
           willChange: 'transform, opacity, filter',
@@ -90,7 +90,7 @@ export function AlbumCover({
         <Skeleton
           className={cn(
             'absolute inset-0 rounded-[inherit]',
-            'transition-opacity duration-300 ease-in-out',
+            'transition-opacity duration-300 ease-in-out'
           )}
           animate={false}
         />

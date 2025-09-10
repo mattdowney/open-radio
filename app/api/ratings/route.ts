@@ -14,10 +14,7 @@ export async function GET(request: Request) {
   const trackId = searchParams.get('trackId');
 
   if (!trackId) {
-    return NextResponse.json(
-      { error: 'Track ID is required' },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: 'Track ID is required' }, { status: 400 });
   }
 
   const trackRatings = tempRatingStore[trackId] || {
@@ -27,9 +24,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     averageRating:
-      trackRatings.totalRatings > 0
-        ? trackRatings.ratingSum / trackRatings.totalRatings
-        : 0,
+      trackRatings.totalRatings > 0 ? trackRatings.ratingSum / trackRatings.totalRatings : 0,
     totalRatings: trackRatings.totalRatings,
   });
 }
@@ -39,10 +34,7 @@ export async function POST(request: Request) {
     const { trackId, rating } = await request.json();
 
     if (!trackId || typeof rating !== 'number' || rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: 'Invalid track ID or rating' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Invalid track ID or rating' }, { status: 400 });
     }
 
     // Initialize if not exists
@@ -65,9 +57,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error processing rating:', error);
-    return NextResponse.json(
-      { error: 'Failed to process rating' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to process rating' }, { status: 500 });
   }
 }

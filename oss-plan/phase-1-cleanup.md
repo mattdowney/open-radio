@@ -118,7 +118,7 @@ Add to `.env.local.example`:
 # App Configuration
 NEXT_PUBLIC_APP_NAME=Open Radio
 NEXT_PUBLIC_APP_DESCRIPTION=A beautiful open source radio application
-NEXT_PUBLIC_DEFAULT_PLAYLIST_ID=PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx
+NEXT_PUBLIC_PLAYLIST_ID=PLBtA_Wr4VtP-sZG5YoACVreBvhdLw1LKx
 
 # Branding
 NEXT_PUBLIC_ENABLE_BRANDING=false
