@@ -4,6 +4,7 @@ import { cn } from '@/app/lib/utils';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { useState } from 'react';
+import { usePageVisibility } from '../../hooks/usePageVisibility';
 
 interface CompactDiscProps {
   src?: string;
@@ -21,6 +22,7 @@ export function CompactDisc({
   className = '',
 }: CompactDiscProps) {
   const [imageLoading, setImageLoading] = useState(true);
+  const isPageVisible = usePageVisibility();
 
   // If loading or no src, show skeleton
   if (isLoading || !src) {
@@ -42,10 +44,10 @@ export function CompactDisc({
       >
         {/* Spinning content */}
         <div
-          className={cn(
-            'absolute inset-0',
-            isPlaying && !isLoading && 'animate-spin-slow',
-          )}
+          className="absolute inset-0 animate-spin-slow"
+          style={{
+            animationPlayState: isPlaying && !isLoading && isPageVisible ? 'running' : 'paused',
+          }}
         >
           {/* CD surface - iridescent rainbow effect */}
           <div
@@ -151,7 +153,7 @@ export function CompactDisc({
                 className={cn(
                   'object-cover',
                   'transition-opacity duration-300',
-                  imageLoading ? 'opacity-100' : 'opacity-100',
+                  imageLoading ? 'opacity-100' : 'opacity-100'
                 )}
                 onLoad={() => setImageLoading(false)}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -186,8 +188,7 @@ export function CompactDisc({
         <div
           className="absolute inset-0 pointer-events-none rounded-full"
           style={{
-            boxShadow:
-              'inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2)',
+            boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.2)',
           }}
         />
 

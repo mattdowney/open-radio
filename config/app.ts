@@ -1,13 +1,59 @@
-export const appConfig = {
-  name: process.env.NEXT_PUBLIC_APP_NAME || 'Open Radio',
-  description:
-    process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'A beautiful radio experience',
-  url: process.env.NEXT_PUBLIC_APP_URL || 'https://openradio.dev',
-  enableAnalytics: process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true',
-  enableFirebase: process.env.NEXT_PUBLIC_FIREBASE_ENABLED === 'true',
-  branding: {
-    enabled: process.env.NEXT_PUBLIC_BRANDING_ENABLED !== 'false', // Show by default
-    logoUrl: process.env.NEXT_PUBLIC_BRANDING_LOGO_URL || '/logo.svg', // Default to built-in logo
-    linkUrl: process.env.NEXT_PUBLIC_BRANDING_LINK_URL,
-  },
-};
+import { getConfig, getConfigSync } from './configReader';
+
+let appConfigCache: any = null;
+
+export function getAppConfigSync() {
+  if (appConfigCache) {
+    return appConfigCache;
+  }
+
+  const config = getConfigSync();
+
+  appConfigCache = {
+    name: config.app.name,
+    description: config.app.description,
+    url: config.app.url,
+    enableAnalytics: config.features.analytics,
+    enableFirebase: config.features.firebase,
+    branding: {
+      enabled: config.branding.enabled,
+      logoUrl: config.branding.logoUrl,
+      linkUrl: config.branding.linkUrl,
+    },
+    ui: {
+      listenerText: config.ui.listenerText,
+      liveText: config.ui.liveText,
+      themeDrawerBackground: config.ui.themeDrawerBackground,
+    },
+  };
+
+  return appConfigCache;
+}
+
+export async function getAppConfig() {
+  const config = await getConfig();
+
+  // Update cache with file-loaded config
+  appConfigCache = {
+    name: config.app.name,
+    description: config.app.description,
+    url: config.app.url,
+    enableAnalytics: config.features.analytics,
+    enableFirebase: config.features.firebase,
+    branding: {
+      enabled: config.branding.enabled,
+      logoUrl: config.branding.logoUrl,
+      linkUrl: config.branding.linkUrl,
+    },
+    ui: {
+      listenerText: config.ui.listenerText,
+      liveText: config.ui.liveText,
+      themeDrawerBackground: config.ui.themeDrawerBackground,
+    },
+  };
+
+  return appConfigCache;
+}
+
+// Legacy export for backwards compatibility
+export const appConfig = getAppConfigSync();

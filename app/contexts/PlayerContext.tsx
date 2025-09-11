@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useRef,
-  ReactNode,
-} from 'react';
+import { createContext, useContext, useReducer, useRef, ReactNode, useEffect } from 'react';
 import { YouTubePlayer } from '../types/player';
 
 export interface PlayerState {
@@ -33,11 +27,32 @@ export type PlayerAction =
   | { type: 'SET_AUTO_ADVANCING'; payload: boolean }
   | { type: 'RESET_PLAYER' };
 
+// Load volume preferences from localStorage
+const getInitialVolume = (): { volume: number; lastVolume: number } => {
+  if (typeof window !== 'undefined') {
+    const savedVolume = localStorage.getItem('radio-volume');
+    const savedLastVolume = localStorage.getItem('radio-last-volume');
+
+    if (savedVolume && savedLastVolume) {
+      const volume = parseInt(savedVolume, 10);
+      const lastVolume = parseInt(savedLastVolume, 10);
+
+      // Validate the values are reasonable
+      if (volume >= 0 && volume <= 100 && lastVolume >= 0 && lastVolume <= 100) {
+        return { volume, lastVolume };
+      }
+    }
+  }
+  return { volume: 70, lastVolume: 70 }; // Default values
+};
+
+const { volume: initialVolume, lastVolume: initialLastVolume } = getInitialVolume();
+
 const initialPlayerState: PlayerState = {
   isPlaying: false,
   isPlayerReady: false,
-  volume: 70,
-  lastVolume: 70,
+  volume: initialVolume,
+  lastVolume: initialLastVolume,
   currentVideoId: null,
   duration: null,
   currentTime: 0,
@@ -93,6 +108,14 @@ const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(playerReducer, initialPlayerState);
   const playerRef = useRef<YouTubePlayer | null>(null);
+
+  // Save volume preferences to localStorage when they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('radio-volume', state.volume.toString());
+      localStorage.setItem('radio-last-volume', state.lastVolume.toString());
+    }
+  }, [state.volume, state.lastVolume]);
 
   const play = () => {
     if (playerRef.current && state.isPlayerReady) {
@@ -154,9 +177,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     seekTo,
   };
 
-  return (
-    <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
-  );
+  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }
 
 export function usePlayer() {

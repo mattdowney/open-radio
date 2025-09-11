@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface BlurredAlbumBackgroundProps {
   className?: string;
@@ -22,6 +23,36 @@ const BlurredAlbumBackground = ({
 }: BlurredAlbumBackgroundProps) => {
   const [displayUrl, setDisplayUrl] = useState(albumCoverUrl);
   const [showBlack, setShowBlack] = useState(false);
+  const { state } = useTheme();
+
+  // Generate theme-specific filter based on current or preview theme
+  const getThemeFilter = (themeId: string, baseBlur: number) => {
+    const filters = {
+      dark: `blur(${baseBlur}px) brightness(0.8) contrast(1.2) saturate(1.1)`,
+      light: `blur(${baseBlur}px) brightness(1.2) contrast(0.9) saturate(0.9) sepia(0.1)`,
+      sunset: `blur(${baseBlur}px) brightness(1.0) contrast(1.2) saturate(0) grayscale(1)`, // Desaturate for sunset
+      ocean: `blur(${baseBlur}px) brightness(0.85) contrast(1.2) saturate(1.4) hue-rotate(-25deg) sepia(0.2)`,
+      vaporwave: `blur(${baseBlur}px) brightness(1.1) contrast(1.4) saturate(1.8) hue-rotate(280deg) sepia(0.3)`,
+    };
+    return (
+      filters[themeId as keyof typeof filters] ||
+      `blur(${baseBlur}px) brightness(1.1) saturate(1.5)`
+    );
+  };
+
+  // Only apply sunset's grayscale when sunset is actually being viewed (selected or previewed)
+  const getFilterForCurrentTheme = (currentThemeId: string, baseBlur: number) => {
+    // If we're previewing sunset or sunset is selected, use sunset filter
+    if (currentThemeId === 'sunset') {
+      return getThemeFilter('sunset', baseBlur);
+    }
+    // Otherwise, use the theme filter but never the sunset grayscale
+    return getThemeFilter(currentThemeId, baseBlur);
+  };
+
+  // Use preview theme if available, otherwise current theme
+  const currentTheme = state.previewTheme || state.currentTheme;
+  const themeFilter = getFilterForCurrentTheme(currentTheme.id, blurAmount);
 
   // Immediately fade to black when shouldFadeToBlack is true
   useEffect(() => {
@@ -47,44 +78,7 @@ const BlurredAlbumBackground = ({
   }, [albumCoverUrl, displayUrl, showBlack, isTrackReady]);
 
   return (
-    <div
-      className={`relative w-full h-full overflow-hidden ${className || ''}`}
-    >
-      {/* Custom keyframe animation for scale + rotate */}
-      <style jsx>{`
-        @keyframes scaleAndSpin {
-          from {
-            transform: scale(2) rotate(0deg);
-          }
-          to {
-            transform: scale(2) rotate(360deg);
-          }
-        }
-      `}</style>
-
-      {/* SVG Filter Definition for Noise */}
-      <svg className="absolute w-0 h-0" aria-hidden="true">
-        <defs>
-          <filter id="album-noise-filter">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.9"
-              numOctaves="4"
-              seed="15"
-            />
-            <feColorMatrix type="saturate" values="0" />
-            <feComponentTransfer>
-              <feFuncA
-                type="discrete"
-                tableValues="0 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 .5 1"
-              />
-            </feComponentTransfer>
-            <feGaussianBlur stdDeviation="0.5" />
-            <feComposite operator="over" />
-          </filter>
-        </defs>
-      </svg>
-
+    <div className={`relative w-full h-full overflow-hidden ${className || ''}`}>
       {/* Fallback dark background */}
       <div className="absolute inset-0 bg-black" />
 
@@ -107,8 +101,9 @@ const BlurredAlbumBackground = ({
             key={displayUrl}
             className="absolute inset-0 w-full h-full"
             style={{
-              filter: `blur(${blurAmount}px) brightness(1.4) saturate(1.3)`,
+              filter: themeFilter,
               willChange: 'opacity',
+              transition: 'filter 300ms ease-in-out',
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -121,28 +116,38 @@ const BlurredAlbumBackground = ({
             <img
               src={displayUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute w-full h-full object-cover"
               style={{
-                animation: 'scaleAndSpin 60s linear infinite',
-                willChange: 'transform',
+                transform: 'scale(1.2) translate3d(0,0,0)',
+                willChange: 'auto',
+                top: '-10%',
+                left: '-10%',
+                width: '120%',
+                height: '120%',
               }}
             />
           </motion.div>
         ) : null}
       </AnimatePresence>
 
-      {/* Noise overlay to prevent banding */}
-      <div
-        className="absolute inset-0 opacity-[0.025] mix-blend-screen pointer-events-none"
-        style={{
-          filter: 'url(#album-noise-filter)',
-          transform: 'scale(1.5)',
-          willChange: 'auto',
-        }}
-      />
-
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+
+      {/* Sunset theme warm gradient overlay */}
+      {currentTheme.id === 'sunset' && displayUrl && !showBlack && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(
+              135deg,
+              rgba(244, 196, 48, 0.9) 0%,
+              rgba(236, 95, 103, 0.8) 50%,
+              rgba(171, 71, 166, 0.7) 100%
+            )`,
+            mixBlendMode: 'screen',
+          }}
+        />
+      )}
     </div>
   );
 };

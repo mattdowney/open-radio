@@ -13,9 +13,7 @@ export const shimmer = (w: number, h: number) => `
 </svg>`;
 
 export const toBase64 = (str: string) =>
-  typeof window === 'undefined'
-    ? Buffer.from(str).toString('base64')
-    : window.btoa(str);
+  typeof window === 'undefined' ? Buffer.from(str).toString('base64') : window.btoa(str);
 
 export const getImagePlaceholder = (width: number, height: number) =>
   `data:image/svg+xml;base64,${toBase64(shimmer(width, height))}`;
@@ -27,7 +25,7 @@ export const getResponsiveImageSizes = (
     md: 768,
     lg: 1024,
     xl: 1280,
-  },
+  }
 ) => {
   const sizes = Object.entries(breakpoints)
     .map(([breakpoint, width]) => `(min-width: ${width}px) ${baseWidth}px`)

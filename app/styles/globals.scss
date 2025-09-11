@@ -4,12 +4,13 @@
 @tailwind utilities;
 
 /* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=Silkscreen:wght@400;700&display=swap');
 
 /* Import Polymath Variable Font */
 @font-face {
   font-family: 'Polymath';
-  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/PolymathVar.woff2?v=1748365175') format('woff2-variations');
+  src: url('https://cdn.shopify.com/s/files/1/0614/6565/7577/files/PolymathVar.woff2?v=1748365175')
+    format('woff2-variations');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -17,18 +18,21 @@
 
 @mixin font-polymath($weight: 600, $serif: 100, $italic: 11) {
   font-family:
-    "Polymath",
+    'Polymath',
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     Roboto,
-    "Helvetica Neue",
+    'Helvetica Neue',
     Arial,
     sans-serif,
-    "Apple Color Emoji",
-    "Segoe UI Emoji",
-    "Segoe UI Symbol";
-  font-variation-settings: "wght" #{$weight}, "SERF" #{$serif}, "ital" #{$italic};
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  font-variation-settings:
+    'wght' #{$weight},
+    'SERF' #{$serif},
+    'ital' #{$italic};
 }
 
 /* Tailwind Base Layer */
@@ -36,9 +40,17 @@
   * {
     font-feature-settings: inherit;
   }
-  
+
   html {
-    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family:
+      'Geist',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
   }
 }
 
@@ -64,23 +76,50 @@
 
 /* Typography */
 
-$hand: 'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS',
-  'Apple Chancery', cursive;
+$hand:
+  'Caveat', 'Dancing Script', Pacifico, 'Brush Script MT', 'Comic Sans MS', 'Apple Chancery',
+  cursive;
 
 .font-mono {
-  font-family: "Geist Mono", "Space Mono", monospace;
+  font-family: 'Geist Mono', 'Space Mono', monospace;
 }
 
-/* Color Palette */
+/* CSS Variables for Theme System */
+:root {
+  /* Default theme (dark) - fallbacks */
+  --theme-primary: #fbfbfb;
+  --theme-secondary: #ff65d2;
+  --theme-background: #00020b;
+  --theme-surface: #2e2f35;
+  --theme-text: #fbfbfb;
+  --theme-textSecondary: #fbfbfb80;
+  --theme-accent: #ff5101;
+  --theme-vinyl: #1a1a1a;
+  --theme-cd: #c0c0c0;
+  --theme-visualizerGlow: #ff65d2;
+  --theme-transitionDuration: 300ms;
+  --theme-vinylSpeed: 2s;
+  --theme-cdSpeed: 1s;
+}
 
-$white: #FBFBFB;
-$pink: #FF65D2;
-$orange: #FF5101;
-$yellow: #FFF200;
-$green: #5EEDA1;
-$blue: #002EFF;
-$dark: #2E2F35;
-$black: #00020B;
+/* Theme transition class */
+.theme-transitioning * {
+  transition:
+    background-color var(--theme-transitionDuration) ease,
+    color var(--theme-transitionDuration) ease,
+    border-color var(--theme-transitionDuration) ease,
+    box-shadow var(--theme-transitionDuration) ease !important;
+}
+
+/* Legacy Color Palette (for backward compatibility) */
+$white: #fbfbfb;
+$pink: #ff65d2;
+$orange: #ff5101;
+$yellow: #fff200;
+$green: #5eeda1;
+$blue: #002eff;
+$dark: #2e2f35;
+$black: #00020b;
 
 /* Global */
 
@@ -97,8 +136,20 @@ body {
   @apply font-geist pb-0 leading-[1.25];
   scroll-behavior: smooth;
   scrollbar-width: none;
-  font-feature-settings: 'dlig' 1, 'ss04' 1;
-  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings:
+    'dlig' 1,
+    'ss04' 1;
+  font-family:
+    'Geist',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  background-color: var(--theme-background);
+  color: var(--theme-text);
 }
 
 h1,
@@ -107,7 +158,8 @@ h3,
 h4,
 h5,
 h6 {
-  @apply text-white tracking-normal leading-[130%] font-polymath;
+  color: var(--theme-text);
+  @apply tracking-normal leading-[130%] font-polymath;
 }
 
 h1,
@@ -116,7 +168,9 @@ h1,
 
   .emphasis {
     @apply font-semibold;
-    font-feature-settings: 'dlig' 1, 'ss04' 1;
+    font-feature-settings:
+      'dlig' 1,
+      'ss04' 1;
   }
 }
 
@@ -130,7 +184,9 @@ h2,
 
   .emphasis {
     @apply font-medium;
-    font-feature-settings: 'dlig' 1, 'ss04' 1;
+    font-feature-settings:
+      'dlig' 1,
+      'ss04' 1;
   }
 }
 
@@ -172,39 +228,66 @@ input,
 .paragraph,
 .newsletter-bonus-container,
 .bonus-container {
-  @apply text-white mb-0 text-base tracking-normal font-normal font-geist;
+  color: var(--theme-text);
+  @apply mb-0 text-base tracking-normal font-normal font-geist;
 
   a {
     @apply inline no-underline text-black duration-duration-fast ease-in-out font-medium;
 
-    background: linear-gradient(transparent, transparent),
+    background:
+      linear-gradient(transparent, transparent),
       linear-gradient(to right, rgba($black, 0.15), rgba($black, 0.15)),
       linear-gradient(to right, $black, $black);
-    background-size: 30px 2px, 100% 2px, 0 2px;
-    background-position: calc(30px * -1) 100%, 100% 100%, 0 100%;
+    background-size:
+      30px 2px,
+      100% 2px,
+      0 2px;
+    background-position:
+      calc(30px * -1) 100%,
+      100% 100%,
+      0 100%;
     background-repeat: no-repeat;
 
     &:hover {
       @apply no-underline text-black;
-      background-size: 30px 2px, 0 2px, 100% 2px;
-      background-position: calc(100% + 30px) 100%, 100% 100%, 0 100%;
+      background-size:
+        30px 2px,
+        0 2px,
+        100% 2px;
+      background-position:
+        calc(100% + 30px) 100%,
+        100% 100%,
+        0 100%;
     }
   }
 
   a.alt-link {
     @apply inline no-underline text-white duration-duration-fast ease-in-out font-medium;
 
-    background: linear-gradient(transparent, transparent),
+    background:
+      linear-gradient(transparent, transparent),
       linear-gradient(to right, rgba($white, 0.15), rgba($white, 0.15)),
       linear-gradient(to right, $white, $white);
-    background-size: 30px 2px, 100% 2px, 0 2px;
-    background-position: calc(30px * -1) 100%, 100% 100%, 0 100%;
+    background-size:
+      30px 2px,
+      100% 2px,
+      0 2px;
+    background-position:
+      calc(30px * -1) 100%,
+      100% 100%,
+      0 100%;
     background-repeat: no-repeat;
 
     &:hover {
       @apply no-underline text-white;
-      background-size: 30px 2px, 0 2px, 100% 2px;
-      background-position: calc(100% + 30px) 100%, 100% 100%, 0 100%;
+      background-size:
+        30px 2px,
+        0 2px,
+        100% 2px;
+      background-position:
+        calc(100% + 30px) 100%,
+        100% 100%,
+        0 100%;
     }
   }
 
@@ -301,11 +384,11 @@ strong {
 
 @keyframes spin {
   from {
-    transform: rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg);
   }
 
   to {
-    transform: rotate(360deg);
+    transform: translate3d(0, 0, 0) rotate(360deg);
   }
 }
 
@@ -316,6 +399,47 @@ strong {
 
 .spin-animation.playing {
   animation-play-state: running;
+}
+
+/* CD Spinner Classes - Optimized with containment */
+.cd-spinner {
+  contain: layout style paint size; /* Full CSS containment for maximum performance */
+  will-change: transform; /* Only transform, not filter */
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transform: translateZ(0); /* Force GPU layer */
+  /* Additional performance optimizations for fast rotation */
+  pointer-events: none; /* No interaction needed */
+  -webkit-transform: translateZ(0); /* Webkit GPU acceleration */
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000;
+}
+
+.cd-spinner.cd-spinning {
+  animation: cd-spin-optimized 0.17s linear infinite; /* Realistic CD speed ~350 RPM */
+  opacity: 0.85; /* Slight transparency suggests motion blur without expensive filter */
+}
+
+.cd-spinner.cd-paused {
+  animation-play-state: paused;
+  opacity: 1; /* Full opacity when stopped */
+}
+
+@keyframes cd-spin-optimized {
+  from { 
+    transform: translateZ(0) rotate(0deg);
+  }
+  to { 
+    transform: translateZ(0) rotate(360deg);
+  }
+}
+
+.cd-spinner.cd-spinning {
+  animation-play-state: running;
+}
+
+.cd-spinner.cd-paused {
+  animation-play-state: paused;
 }
 
 /* Loading animation */
@@ -354,16 +478,14 @@ strong {
 }
 
 .marquee-gradient {
-  -webkit-mask-image: linear-gradient(to right,
-      transparent,
-      black 15%,
-      black 85%,
-      transparent 100%);
-  mask-image: linear-gradient(to right,
-      transparent,
-      black 15%,
-      black 85%,
-      transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 15%,
+    black 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent 100%);
 }
 
 @keyframes marquee {
@@ -373,6 +495,76 @@ strong {
 
   100% {
     transform: translateX(calc(-100% - 20px));
+  }
+}
+
+/* Sunset theme animations */
+@keyframes shimmer {
+  0%, 100% {
+    transform: translateX(-10px) translateY(-5px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateX(10px) translateY(5px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float0 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-5px);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-30px) translateX(15px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes float1 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translateY(-25px) translateX(-10px);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translateY(-15px) translateX(8px);
+    opacity: 0.8;
+  }
+}
+
+@keyframes float2 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-18px) translateX(-12px);
+    opacity: 0.9;
+  }
+  80% {
+    transform: translateY(-8px) translateX(6px);
+    opacity: 0.4;
   }
 }
 
@@ -423,7 +615,7 @@ strong {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--volume-slider-track-color, rgba(255, 255, 255, 0.1));
   border-radius: 9999px;
 }
 
@@ -434,7 +626,7 @@ strong {
   left: 0;
   width: var(--volume-percentage, 0%);
   height: 100%;
-  background: white;
+  background: var(--volume-slider-color, white);
   border-radius: 9999px;
   transform-origin: left;
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -449,7 +641,6 @@ strong {
   background: transparent;
   cursor: pointer;
   position: relative;
-  z-index: 2;
 }
 
 .volume-slider::-moz-range-thumb {
@@ -460,7 +651,6 @@ strong {
   background: transparent;
   cursor: pointer;
   position: relative;
-  z-index: 2;
 }
 
 .volume-slider::-webkit-slider-runnable-track {
@@ -515,4 +705,167 @@ strong {
 .control-button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Theme-Specific Enhancements */
+
+/* Neon theme glow effects */
+.theme-neon {
+  .volume-slider::after {
+    box-shadow: 0 0 8px var(--theme-accent);
+  }
+  
+  .control-button:hover {
+    box-shadow: 0 0 12px var(--theme-accent);
+  }
+}
+
+/* Ocean theme subtle animations */
+.theme-ocean {
+  .spin-animation.playing {
+    animation: spin var(--theme-vinylSpeed) ease-in-out infinite;
+  }
+}
+
+/* Sunset theme warm glow */
+.theme-sunset {
+  .cd-spinner.cd-spinning {
+    filter: drop-shadow(0 0 4px var(--theme-secondary));
+  }
+}
+
+/* Light theme softer shadows */
+.theme-light {
+  .control-button {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Dark theme enhanced contrast */
+.theme-dark {
+  .volume-slider::before {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Vaporwave font override - applies to all elements */
+.vaporwave-font,
+.vaporwave-font * {
+  font-family: 'Silkscreen', 'Geist', monospace !important;
+}
+
+/* CRT Screen Jitter Animations for Vaporwave */
+@keyframes crt-flicker {
+  0% { opacity: 1; }
+  98% { opacity: 1; }
+  99% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+@keyframes crt-jitter {
+  0% { transform: translateY(0px); }
+  10% { transform: translateY(-0.5px); }
+  20% { transform: translateY(0.5px); }
+  30% { transform: translateY(-0.2px); }
+  40% { transform: translateY(0.3px); }
+  50% { transform: translateY(-0.1px); }
+  60% { transform: translateY(0.2px); }
+  70% { transform: translateY(-0.3px); }
+  80% { transform: translateY(0.1px); }
+  90% { transform: translateY(-0.4px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes scan-line-move {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes vhs-tracking {
+  0% { transform: translateX(0px); }
+  2% { transform: translateX(-2px); }
+  4% { transform: translateX(1px); }
+  6% { transform: translateX(0px); }
+  92% { transform: translateX(0px); }
+  94% { transform: translateX(3px); }
+  96% { transform: translateX(-1px); }
+  100% { transform: translateX(0px); }
+}
+
+@keyframes rgb-split {
+  0% { transform: translateX(0px); filter: hue-rotate(0deg); }
+  10% { transform: translateX(2px); filter: hue-rotate(90deg); }
+  20% { transform: translateX(-1px); filter: hue-rotate(180deg); }
+  30% { transform: translateX(0px); filter: hue-rotate(270deg); }
+  100% { transform: translateX(0px); filter: hue-rotate(360deg); }
+}
+
+@keyframes grid-perspective {
+  0% { transform: perspective(800px) rotateX(75deg) translateZ(-100px) translateY(0px); }
+  100% { transform: perspective(800px) rotateX(75deg) translateZ(-100px) translateY(40px); }
+}
+
+@keyframes grid-travel {
+  0% { 
+    background-position: 0px 100vh, 0px 100vh;
+    transform: perspective(600px) rotateX(80deg) translateY(20px);
+  }
+  100% { 
+    background-position: 0px 60vh, 0px 60vh;
+    transform: perspective(600px) rotateX(80deg) translateY(20px);
+  }
+}
+
+@keyframes tron-grid-travel {
+  0% { 
+    background-position: 50px 50px, 50px 50px;
+  }
+  100% { 
+    background-position: 0px 0px, 0px 0px;
+  }
+}
+
+@keyframes tron-grid-subtle-flow {
+  0% { 
+    background-position: 0px 50px, 0px 50px;
+  }
+  100% { 
+    background-position: 0px 0px, 0px 0px;
+  }
+}
+
+@keyframes float-kanji {
+  0% { 
+    transform: translateY(100vh) translateX(0px);
+    opacity: 0;
+  }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.7; }
+  100% { 
+    transform: translateY(-10vh) translateX(50px);
+    opacity: 0;
+  }
+}
+
+@keyframes datamosh {
+  0% { 
+    transform: translateX(0px) scale(1, 1);
+    filter: hue-rotate(0deg);
+  }
+  25% { 
+    transform: translateX(2px) scale(1.01, 0.98);
+    filter: hue-rotate(90deg);
+  }
+  50% { 
+    transform: translateX(-1px) scale(0.99, 1.02);
+    filter: hue-rotate(180deg);
+  }
+  75% { 
+    transform: translateX(3px) scale(1.02, 0.97);
+    filter: hue-rotate(270deg);
+  }
+  100% { 
+    transform: translateX(0px) scale(1, 1);
+    filter: hue-rotate(360deg);
+  }
 }

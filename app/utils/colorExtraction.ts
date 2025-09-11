@@ -5,9 +5,7 @@ export interface ExtractedColors {
   palette: string[];
 }
 
-export async function extractColorsFromImage(
-  imageUrl: string,
-): Promise<ExtractedColors> {
+export async function extractColorsFromImage(imageUrl: string): Promise<ExtractedColors> {
   return new Promise((resolve, reject) => {
     const colorThief = new ColorThief();
     const img = new Image();
@@ -23,14 +21,8 @@ export async function extractColorsFromImage(
           `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 
         resolve({
-          dominant: rgbToHex(
-            dominantColor[0],
-            dominantColor[1],
-            dominantColor[2],
-          ),
-          palette: palette.map((color) =>
-            rgbToHex(color[0], color[1], color[2]),
-          ),
+          dominant: rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2]),
+          palette: palette.map((color) => rgbToHex(color[0], color[1], color[2])),
         });
       } catch (error) {
         reject(error);
@@ -45,9 +37,7 @@ export async function extractColorsFromImage(
   });
 }
 
-export function generateShaderColors(
-  extractedColors: ExtractedColors,
-): string[] {
+export function generateShaderColors(extractedColors: ExtractedColors): string[] {
   const { dominant, palette } = extractedColors;
 
   const darkenColor = (hex: string, amount: number): string => {

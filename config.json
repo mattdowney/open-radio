@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "Matt Downey Radio",
+    "description": "Tune in. Vibe out. Get productive.",
+    "url": "https://radio.mattdowney.com"
+  },
+  "branding": {
+    "enabled": true,
+    "logoUrl": "/assets/logo.svg",
+    "linkUrl": ""
+  },
+  "features": {
+    "analytics": false,
+    "firebase": true
+  },
+  "ui": {
+    "listenerText": "vibing",
+    "liveText": "LIVE",
+    "themeDrawerBackground": "rgba(0, 0, 0, 0.6)"
+  },
+  "social": {
+    "ogImageUrl": "/og-image.png",
+    "twitterImageUrl": "/og-image.png"
+  }
+}

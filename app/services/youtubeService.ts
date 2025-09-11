@@ -1,15 +1,11 @@
 import { shuffle } from 'lodash';
-import {
-  YouTubeVideoItem,
-  YouTubePlaylistItem,
-  YouTubeApiResponse,
-} from '../types/youtube';
+import { YouTubeVideoItem, YouTubePlaylistItem, YouTubeApiResponse } from '../types/youtube';
 import { TrackDetails, ValidatedTrack } from '../types/track';
 
 export class YouTubeAPIError extends Error {
   constructor(
     message: string,
-    public statusCode?: number,
+    public statusCode?: number
   ) {
     super(message);
     this.name = 'YouTubeAPIError';
@@ -34,28 +30,34 @@ export class YouTubeService {
     const url = `${this.baseUrl}/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&key=${this.apiKey}`;
 
     try {
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new YouTubeAPIError(
           `API Error: ${errorData.error?.message || 'Unknown error'}`,
-          response.status,
+          response.status
         );
       }
 
-      const data: YouTubeApiResponse<YouTubePlaylistItem> =
-        await response.json();
+      const data: YouTubeApiResponse<YouTubePlaylistItem> = await response.json();
 
       if (!data || !data.items || !Array.isArray(data.items)) {
         throw new YouTubeAPIError('Invalid playlist data received');
       }
 
       const videoIds = data.items
-        .filter(
-          (item): item is YouTubePlaylistItem =>
-            item?.snippet?.resourceId?.videoId != null,
-        )
+        .filter((item): item is YouTubePlaylistItem => item?.snippet?.resourceId?.videoId != null)
         .map((item) => item.snippet.resourceId.videoId);
 
       if (videoIds.length === 0) {
@@ -67,8 +69,11 @@ export class YouTubeService {
       if (error instanceof YouTubeAPIError) {
         throw error;
       }
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new YouTubeAPIError('Request timed out - please check your connection');
+      }
       throw new YouTubeAPIError(
-        `Failed to fetch playlist: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to fetch playlist: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -87,10 +92,7 @@ export class YouTubeService {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new YouTubeAPIError(
-          `API request failed: ${response.status}`,
-          response.status,
-        );
+        throw new YouTubeAPIError(`API request failed: ${response.status}`, response.status);
       }
 
       const data: YouTubeApiResponse<YouTubeVideoItem> = await response.json();
@@ -112,7 +114,7 @@ export class YouTubeService {
         throw error;
       }
       throw new YouTubeAPIError(
-        `Failed to fetch video details: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to fetch video details: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -146,9 +148,7 @@ export class YouTubeService {
   /**
    * Parse video snippet into TrackDetails
    */
-  private parseVideoDetails(
-    snippet: YouTubeVideoItem['snippet'],
-  ): TrackDetails {
+  private parseVideoDetails(snippet: YouTubeVideoItem['snippet']): TrackDetails {
     const fullTitle = snippet.title || '';
     const [artist, ...titleParts] = fullTitle.split(' - ');
     const title = titleParts.join(' - ') || fullTitle;

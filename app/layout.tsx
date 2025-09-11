@@ -1,41 +1,60 @@
 import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from 'next';
-import { appConfig } from '../config/app';
+import { getAppConfig } from '../config/app';
+import { getConfig } from '../config/configReader';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { VisualizerProvider } from './contexts/VisualizerContext';
 import './styles/globals.scss';
 
-export const metadata: Metadata = {
-  title: appConfig.name,
-  description: appConfig.description,
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const [appConfig, config] = await Promise.all([getAppConfig(), getConfig()]);
+
+  return {
     title: appConfig.name,
     description: appConfig.description,
-    type: 'website',
-    url: appConfig.url,
-    images: [
-      {
-        url: process.env.NEXT_PUBLIC_OG_IMAGE_URL || '/og-image.png',
-        width: 800,
-        height: 600,
-        alt: appConfig.name,
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: appConfig.name,
-    description: appConfig.description,
-    images: [process.env.NEXT_PUBLIC_TWITTER_IMAGE_URL || '/og-image.png'],
-  },
-};
+    openGraph: {
+      title: appConfig.name,
+      description: appConfig.description,
+      type: 'website',
+      url: appConfig.url,
+      images: [
+        {
+          url: config.social.ogImageUrl,
+          width: 800,
+          height: 600,
+          alt: appConfig.name,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: appConfig.name,
+      description: appConfig.description,
+      images: [config.social.twitterImageUrl],
+    },
+  };
+}
 
 interface RootLayoutProps {
   children: React.ReactNode;
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const appConfig = await getAppConfig();
+
   return (
     <html lang="en">
-      <body>{children}</body>
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body>
+        <ThemeProvider>
+          <VisualizerProvider>{children}</VisualizerProvider>
+        </ThemeProvider>
+      </body>
       {appConfig.enableAnalytics && <Analytics />}
     </html>
   );

@@ -65,12 +65,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-8">
           <div className="max-w-md text-center space-y-4">
-            <h1 className="text-2xl font-bold text-red-400">
-              Something went wrong
-            </h1>
+            <h1 className="text-2xl font-bold text-red-400">Something went wrong</h1>
             <p className="text-gray-300">
-              The radio player encountered an unexpected error. Please try
-              refreshing the page.
+              The radio player encountered an unexpected error. Please try refreshing the page.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -84,9 +81,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                   </div>
                   <div>
                     <strong>Stack:</strong>
-                    <pre className="whitespace-pre-wrap mt-1 text-xs">
-                      {this.state.error.stack}
-                    </pre>
+                    <pre className="whitespace-pre-wrap mt-1 text-xs">{this.state.error.stack}</pre>
                   </div>
                   {this.state.errorInfo && (
                     <div>
