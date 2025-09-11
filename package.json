@@ -42,7 +42,7 @@
     "next": "^14.2.32",
     "ogl": "^1.0.11",
     "react": "^18",
-    "react-dom": "^18",
+    "react-dom": "^19",
     "react-fast-marquee": "^1.6.5",
     "tailwind-merge": "^3.0.1",
     "youtube-player": "^5.6.0"
@@ -58,7 +58,7 @@
     "@types/lodash": "^4.17.15",
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
+    "@types/react-dom": "^19.1.9",
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
     "autoprefixer": "^10.0.1",
