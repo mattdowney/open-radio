@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@paper-design/shaders-react": "^0.0.46",
+    "@paper-design/shaders-react": "^0.0.52",
     "@radix-ui/react-dialog": "^1.1.15",
     "@sentry/nextjs": "^10.11.0",
     "@tsparticles/basic": "^3.9.1",
