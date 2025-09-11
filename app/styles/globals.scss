@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 /* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=Silkscreen:wght@400;700&display=swap');
 
 /* Import Polymath Variable Font */
 @font-face {
@@ -401,12 +401,37 @@ strong {
   animation-play-state: running;
 }
 
-/* CD Spinner Classes */
+/* CD Spinner Classes - Optimized with containment */
 .cd-spinner {
-  animation: spin 0.3s linear infinite;
-  animation-play-state: paused;
-  will-change: transform;
+  contain: layout style paint size; /* Full CSS containment for maximum performance */
+  will-change: transform; /* Only transform, not filter */
   backface-visibility: hidden;
+  transform-style: preserve-3d;
+  transform: translateZ(0); /* Force GPU layer */
+  /* Additional performance optimizations for fast rotation */
+  pointer-events: none; /* No interaction needed */
+  -webkit-transform: translateZ(0); /* Webkit GPU acceleration */
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000;
+}
+
+.cd-spinner.cd-spinning {
+  animation: cd-spin-optimized 0.17s linear infinite; /* Realistic CD speed ~350 RPM */
+  opacity: 0.85; /* Slight transparency suggests motion blur without expensive filter */
+}
+
+.cd-spinner.cd-paused {
+  animation-play-state: paused;
+  opacity: 1; /* Full opacity when stopped */
+}
+
+@keyframes cd-spin-optimized {
+  from { 
+    transform: translateZ(0) rotate(0deg);
+  }
+  to { 
+    transform: translateZ(0) rotate(360deg);
+  }
 }
 
 .cd-spinner.cd-spinning {
@@ -473,6 +498,76 @@ strong {
   }
 }
 
+/* Sunset theme animations */
+@keyframes shimmer {
+  0%, 100% {
+    transform: translateX(-10px) translateY(-5px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateX(10px) translateY(5px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float0 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-5px);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-30px) translateX(15px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes float1 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translateY(-25px) translateX(-10px);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translateY(-15px) translateX(8px);
+    opacity: 0.8;
+  }
+}
+
+@keyframes float2 {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.5;
+  }
+  40% {
+    transform: translateY(-18px) translateX(-12px);
+    opacity: 0.9;
+  }
+  80% {
+    transform: translateY(-8px) translateX(6px);
+    opacity: 0.4;
+  }
+}
+
 .marquee-content::before,
 .marquee-content::after {
   content: attr(data-text);
@@ -520,7 +615,7 @@ strong {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--volume-slider-track-color, rgba(255, 255, 255, 0.1));
   border-radius: 9999px;
 }
 
@@ -531,7 +626,7 @@ strong {
   left: 0;
   width: var(--volume-percentage, 0%);
   height: 100%;
-  background: white;
+  background: var(--volume-slider-color, white);
   border-radius: 9999px;
   transform-origin: left;
   transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -546,7 +641,6 @@ strong {
   background: transparent;
   cursor: pointer;
   position: relative;
-  z-index: 2;
 }
 
 .volume-slider::-moz-range-thumb {
@@ -557,7 +651,6 @@ strong {
   background: transparent;
   cursor: pointer;
   position: relative;
-  z-index: 2;
 }
 
 .volume-slider::-webkit-slider-runnable-track {
@@ -612,4 +705,167 @@ strong {
 .control-button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Theme-Specific Enhancements */
+
+/* Neon theme glow effects */
+.theme-neon {
+  .volume-slider::after {
+    box-shadow: 0 0 8px var(--theme-accent);
+  }
+  
+  .control-button:hover {
+    box-shadow: 0 0 12px var(--theme-accent);
+  }
+}
+
+/* Ocean theme subtle animations */
+.theme-ocean {
+  .spin-animation.playing {
+    animation: spin var(--theme-vinylSpeed) ease-in-out infinite;
+  }
+}
+
+/* Sunset theme warm glow */
+.theme-sunset {
+  .cd-spinner.cd-spinning {
+    filter: drop-shadow(0 0 4px var(--theme-secondary));
+  }
+}
+
+/* Light theme softer shadows */
+.theme-light {
+  .control-button {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Dark theme enhanced contrast */
+.theme-dark {
+  .volume-slider::before {
+    background: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* Vaporwave font override - applies to all elements */
+.vaporwave-font,
+.vaporwave-font * {
+  font-family: 'Silkscreen', 'Geist', monospace !important;
+}
+
+/* CRT Screen Jitter Animations for Vaporwave */
+@keyframes crt-flicker {
+  0% { opacity: 1; }
+  98% { opacity: 1; }
+  99% { opacity: 0.95; }
+  100% { opacity: 1; }
+}
+
+@keyframes crt-jitter {
+  0% { transform: translateY(0px); }
+  10% { transform: translateY(-0.5px); }
+  20% { transform: translateY(0.5px); }
+  30% { transform: translateY(-0.2px); }
+  40% { transform: translateY(0.3px); }
+  50% { transform: translateY(-0.1px); }
+  60% { transform: translateY(0.2px); }
+  70% { transform: translateY(-0.3px); }
+  80% { transform: translateY(0.1px); }
+  90% { transform: translateY(-0.4px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes scan-line-move {
+  0% { transform: translateY(-100vh); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes vhs-tracking {
+  0% { transform: translateX(0px); }
+  2% { transform: translateX(-2px); }
+  4% { transform: translateX(1px); }
+  6% { transform: translateX(0px); }
+  92% { transform: translateX(0px); }
+  94% { transform: translateX(3px); }
+  96% { transform: translateX(-1px); }
+  100% { transform: translateX(0px); }
+}
+
+@keyframes rgb-split {
+  0% { transform: translateX(0px); filter: hue-rotate(0deg); }
+  10% { transform: translateX(2px); filter: hue-rotate(90deg); }
+  20% { transform: translateX(-1px); filter: hue-rotate(180deg); }
+  30% { transform: translateX(0px); filter: hue-rotate(270deg); }
+  100% { transform: translateX(0px); filter: hue-rotate(360deg); }
+}
+
+@keyframes grid-perspective {
+  0% { transform: perspective(800px) rotateX(75deg) translateZ(-100px) translateY(0px); }
+  100% { transform: perspective(800px) rotateX(75deg) translateZ(-100px) translateY(40px); }
+}
+
+@keyframes grid-travel {
+  0% { 
+    background-position: 0px 100vh, 0px 100vh;
+    transform: perspective(600px) rotateX(80deg) translateY(20px);
+  }
+  100% { 
+    background-position: 0px 60vh, 0px 60vh;
+    transform: perspective(600px) rotateX(80deg) translateY(20px);
+  }
+}
+
+@keyframes tron-grid-travel {
+  0% { 
+    background-position: 50px 50px, 50px 50px;
+  }
+  100% { 
+    background-position: 0px 0px, 0px 0px;
+  }
+}
+
+@keyframes tron-grid-subtle-flow {
+  0% { 
+    background-position: 0px 50px, 0px 50px;
+  }
+  100% { 
+    background-position: 0px 0px, 0px 0px;
+  }
+}
+
+@keyframes float-kanji {
+  0% { 
+    transform: translateY(100vh) translateX(0px);
+    opacity: 0;
+  }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.7; }
+  100% { 
+    transform: translateY(-10vh) translateX(50px);
+    opacity: 0;
+  }
+}
+
+@keyframes datamosh {
+  0% { 
+    transform: translateX(0px) scale(1, 1);
+    filter: hue-rotate(0deg);
+  }
+  25% { 
+    transform: translateX(2px) scale(1.01, 0.98);
+    filter: hue-rotate(90deg);
+  }
+  50% { 
+    transform: translateX(-1px) scale(0.99, 1.02);
+    filter: hue-rotate(180deg);
+  }
+  75% { 
+    transform: translateX(3px) scale(1.02, 0.97);
+    filter: hue-rotate(270deg);
+  }
+  100% { 
+    transform: translateX(0px) scale(1, 1);
+    filter: hue-rotate(360deg);
+  }
 }

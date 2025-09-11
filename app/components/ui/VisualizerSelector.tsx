@@ -1,12 +1,11 @@
 'use client';
 
 import { useVisualizer } from '../../contexts/VisualizerContext';
-import { Disc, Disc3, Radio } from 'lucide-react';
+import { Disc, Disc3 } from 'lucide-react';
 
 const VisualizerIcons = {
   vinyl: Disc,
   cd: Disc3,
-  cassette: Radio,
 };
 
 export function VisualizerSelector() {
@@ -34,7 +33,7 @@ export function VisualizerSelector() {
       </button>
 
       <div
-        className="absolute top-full right-0 mt-2 py-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+        className="absolute top-full right-0 mt-2 py-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200"
         style={{
           backgroundColor: 'var(--theme-surface)',
           border: '1px solid var(--theme-textSecondary)',

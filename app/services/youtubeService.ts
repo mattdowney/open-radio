@@ -30,7 +30,17 @@ export class YouTubeService {
     const url = `${this.baseUrl}/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&key=${this.apiKey}`;
 
     try {
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -58,6 +68,9 @@ export class YouTubeService {
     } catch (error) {
       if (error instanceof YouTubeAPIError) {
         throw error;
+      }
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new YouTubeAPIError('Request timed out - please check your connection');
       }
       throw new YouTubeAPIError(
         `Failed to fetch playlist: ${error instanceof Error ? error.message : 'Unknown error'}`

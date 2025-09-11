@@ -3,8 +3,10 @@
 import { cn } from '@/app/lib/utils';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePageVisibility } from '../../hooks/usePageVisibility';
+import { useTheme } from '../../contexts/ThemeContext';
+import { motion } from 'framer-motion';
 
 interface VinylRecordProps {
   src?: string;
@@ -21,8 +23,47 @@ export function VinylRecord({
   isLoading = false,
   className = '',
 }: VinylRecordProps) {
-  const [imageLoading, setImageLoading] = useState(true);
+  const [isAnimationReady, setIsAnimationReady] = useState(false);
   const isPageVisible = usePageVisibility();
+  const { state } = useTheme();
+  const currentTheme = state.previewTheme || state.currentTheme;
+
+  // Animation variants for coordinated entrance
+  const vinylVariants = {
+    hidden: {
+      scale: 0.95, // Much more subtle zoom
+      opacity: 0,
+      y: 15, // Much smaller vertical movement
+    },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      y: 0, // Move to final position
+      transition: {
+        duration: 0.2, // Much faster
+        ease: 'easeOut' as const,
+      },
+    },
+  };
+
+  const handleImageLoad = () => {
+    // Immediate animation trigger - no complex state management
+    setTimeout(() => {
+      setIsAnimationReady(true);
+    }, 20); // Very short delay for immediate elegance
+  };
+
+  // Simplified fallback mechanism
+  useEffect(() => {
+    if (!isLoading && src && !isAnimationReady) {
+      // Fallback timeout to force animation if image load event doesn't fire
+      const fallbackTimer = setTimeout(() => {
+        setIsAnimationReady(true);
+      }, 2000); // Shorter fallback time
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [src, isLoading, isAnimationReady]);
 
   // If loading or no src, show skeleton
   if (isLoading || !src) {
@@ -36,7 +77,12 @@ export function VinylRecord({
   }
 
   return (
-    <div className={cn('relative aspect-square w-full', className)}>
+    <motion.div
+      className={cn('relative aspect-square w-full', className)}
+      variants={vinylVariants}
+      initial="hidden"
+      animate={isAnimationReady ? 'visible' : 'hidden'}
+    >
       {/* Main vinyl record container */}
       <div
         className="relative w-full h-full rounded-full overflow-hidden bg-black shadow-2xl"
@@ -115,12 +161,8 @@ export function VinylRecord({
                 src={src}
                 alt={alt}
                 fill
-                className={cn(
-                  'object-cover',
-                  'transition-opacity duration-300',
-                  imageLoading ? 'opacity-100' : 'opacity-100'
-                )}
-                onLoad={() => setImageLoading(false)}
+                className={cn('object-cover', 'transition-opacity duration-300', 'opacity-100')}
+                onLoad={handleImageLoad}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 priority
                 quality={90}
@@ -191,6 +233,6 @@ export function VinylRecord({
           }}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }

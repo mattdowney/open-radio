@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useEffect, useRef } from 'react';
 
 export interface Theme {
   id: string;
@@ -71,16 +71,16 @@ export const themes: Record<string, Theme> = {
     id: 'sunset',
     name: 'Sunset',
     colors: {
-      primary: '#FFF200',
-      secondary: '#FF5101',
-      background: '#2E1065',
-      surface: '#4A1A69',
-      text: '#FFF200',
-      textSecondary: '#FFF20080',
-      accent: '#FF65D2',
-      vinyl: '#1A0E2E',
-      cd: '#FFB347',
-      visualizerGlow: '#FF5101',
+      primary: '#F4C430',
+      secondary: '#EC5F67',
+      background: '#AB47A6',
+      surface: '#C855B0',
+      text: '#F4C430',
+      textSecondary: '#F4C43080',
+      accent: '#EC5F67',
+      vinyl: '#8B3A8F',
+      cd: '#F4C430',
+      visualizerGlow: '#EC5F67',
     },
     animations: {
       transitionDuration: '450ms',
@@ -92,16 +92,16 @@ export const themes: Record<string, Theme> = {
     id: 'ocean',
     name: 'Ocean',
     colors: {
-      primary: '#5EEDA1',
-      secondary: '#002EFF',
-      background: '#0A192F',
-      surface: '#172A45',
-      text: '#5EEDA1',
-      textSecondary: '#5EEDA180',
-      accent: '#64FFDA',
-      vinyl: '#0F2027',
-      cd: '#4A90E2',
-      visualizerGlow: '#64FFDA',
+      primary: '#00BCD4',
+      secondary: '#2962FF',
+      background: '#0D1B4C',
+      surface: '#1A2A5C',
+      text: '#00BCD4',
+      textSecondary: '#00BCD480',
+      accent: '#2962FF',
+      vinyl: '#0A1539',
+      cd: '#00BCD4',
+      visualizerGlow: '#2962FF',
     },
     animations: {
       transitionDuration: '600ms',
@@ -109,20 +109,20 @@ export const themes: Record<string, Theme> = {
       cdSpeed: '1.5s',
     },
   },
-  neon: {
-    id: 'neon',
-    name: 'Neon',
+  vaporwave: {
+    id: 'vaporwave',
+    name: 'Vaporwave',
     colors: {
-      primary: '#FF65D2',
-      secondary: '#FFF200',
+      primary: '#FF6EC7',
+      secondary: '#4ECDC4',
       background: '#0D0D0D',
       surface: '#1A1A1A',
-      text: '#FF65D2',
-      textSecondary: '#FF65D280',
-      accent: '#00FFFF',
+      text: '#FF6EC7',
+      textSecondary: '#FF6EC780',
+      accent: '#5A5FCC',
       vinyl: '#000000',
-      cd: '#FF1493',
-      visualizerGlow: '#00FFFF',
+      cd: '#4ECDC4',
+      visualizerGlow: '#5A5FCC',
     },
     animations: {
       transitionDuration: '200ms',
@@ -134,11 +134,13 @@ export const themes: Record<string, Theme> = {
 
 type ThemeState = {
   currentTheme: Theme;
+  previewTheme: Theme | null;
   isTransitioning: boolean;
 };
 
 type ThemeAction =
   | { type: 'SET_THEME'; payload: Theme }
+  | { type: 'SET_PREVIEW_THEME'; payload: Theme | null }
   | { type: 'SET_TRANSITIONING'; payload: boolean };
 
 const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
@@ -147,6 +149,12 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
       return {
         ...state,
         currentTheme: action.payload,
+        previewTheme: null, // Clear preview when theme is set
+      };
+    case 'SET_PREVIEW_THEME':
+      return {
+        ...state,
+        previewTheme: action.payload,
       };
     case 'SET_TRANSITIONING':
       return {
@@ -161,6 +169,7 @@ const themeReducer = (state: ThemeState, action: ThemeAction): ThemeState => {
 const ThemeContext = createContext<{
   state: ThemeState;
   switchTheme: (themeId: string) => void;
+  previewTheme: (theme: Theme | null) => void;
   availableThemes: Theme[];
 } | null>(null);
 
@@ -178,13 +187,19 @@ const getInitialTheme = (): Theme => {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(themeReducer, {
     currentTheme: getInitialTheme(),
+    previewTheme: null,
     isTransitioning: false,
   });
+  const clearPreviewTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Apply CSS variables when theme changes
   useEffect(() => {
     const root = document.documentElement;
-    const theme = state.currentTheme;
+    // Use preview theme if available, otherwise use current theme
+    const theme = state.previewTheme || state.currentTheme;
+
+    // Add transitioning class for smooth theme changes
+    document.body.classList.add('theme-transitioning');
 
     // Set color CSS variables
     Object.entries(theme.colors).forEach(([key, value]) => {
@@ -198,8 +213,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     // Add theme class to body for additional styling
     document.body.className = document.body.className.replace(/theme-\w+/g, '');
-    document.body.classList.add(`theme-${theme.id}`);
-  }, [state.currentTheme]);
+    document.body.classList.add(`theme-${theme.id}`, 'theme-transitioning');
+
+    // Remove transitioning class after transition completes
+    const transitionDuration = parseInt(theme.animations.transitionDuration) || 300;
+    const timeoutId = setTimeout(() => {
+      document.body.classList.remove('theme-transitioning');
+    }, transitionDuration);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [state.currentTheme, state.previewTheme]);
 
   const switchTheme = async (themeId: string) => {
     if (!themes[themeId] || state.isTransitioning) return;
@@ -222,11 +247,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }, 50);
   };
 
+  const previewTheme = (theme: Theme | null) => {
+    // Clear any existing timeout
+    if (clearPreviewTimeoutRef.current) {
+      clearTimeout(clearPreviewTimeoutRef.current);
+      clearPreviewTimeoutRef.current = null;
+    }
+
+    if (theme) {
+      // Immediately set preview theme
+      dispatch({ type: 'SET_PREVIEW_THEME', payload: theme });
+    } else {
+      // Add small delay before clearing to prevent flashing
+      clearPreviewTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'SET_PREVIEW_THEME', payload: null });
+        clearPreviewTimeoutRef.current = null;
+      }, 100); // 100ms delay
+    }
+  };
+
   return (
     <ThemeContext.Provider
       value={{
         state,
         switchTheme,
+        previewTheme,
         availableThemes: Object.values(themes),
       }}
     >

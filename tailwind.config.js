@@ -106,6 +106,7 @@ module.exports = {
         'spin-pulse': 'spinAndPulse 120s linear infinite',
         'spin-only': 'spinOnly 120s linear infinite',
         marquee: 'marquee 15s linear infinite',
+        'ocean-god-rays': 'oceanGodRays 20s linear infinite',
       },
       keyframes: {
         fadeInDramatic: {
@@ -141,6 +142,10 @@ module.exports = {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-100%)' },
         },
+        oceanGodRays: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
       },
     },
 
@@ -151,7 +156,18 @@ module.exports = {
     },
   },
   plugins: [
-    function ({ addUtilities }) {
+    function ({ addUtilities, addBase }) {
+      // Add CSS custom properties for z-index layers
+      addBase({
+        ':root': {
+          '--layer-background': '0',
+          '--layer-effects': '100',
+          '--layer-ui': '200',
+          '--layer-modals': '300',
+        },
+      });
+
+      // Font width utilities
       const newUtilities = {
         '.font-width-normal': {
           fontVariationSettings: "'wdth' 100",
@@ -161,6 +177,19 @@ module.exports = {
         },
         '.font-width-condensed': {
           fontVariationSettings: "'wdth' 90",
+        },
+        // Layer z-index utilities
+        '.z-layer-background': {
+          zIndex: 'var(--layer-background)',
+        },
+        '.z-layer-effects': {
+          zIndex: 'var(--layer-effects)',
+        },
+        '.z-layer-ui': {
+          zIndex: 'var(--layer-ui)',
+        },
+        '.z-layer-modals': {
+          zIndex: 'var(--layer-modals)',
         },
       };
       addUtilities(newUtilities);

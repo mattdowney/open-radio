@@ -35,43 +35,53 @@ export function RadioPlayer() {
 
       try {
         setLoading(true);
-        const videoIds = await youtubeService.fetchPlaylistItems(PLAYLIST_ID);
 
-        setPlaylist(videoIds);
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Loading timeout - please refresh')), 15000)
+        );
 
-        // Validate initial tracks
-        const initialTracks = videoIds.slice(0, 4);
-        const validatedTracks = await youtubeService.validateTracks(initialTracks);
+        const loadingPromise = (async () => {
+          const videoIds = await youtubeService.fetchPlaylistItems(PLAYLIST_ID);
+          setPlaylist(videoIds);
 
-        if (validatedTracks.length > 0) {
-          queueDispatch({
-            type: 'SET_VALIDATED_TRACKS',
-            payload: validatedTracks,
-          });
+          // Validate initial tracks
+          const initialTracks = videoIds.slice(0, 4);
+          const validatedTracks = await youtubeService.validateTracks(initialTracks);
 
-          // Set current track
-          const currentTrack = validatedTracks[0];
-          queueDispatch({
-            type: 'SET_CURRENT_TRACK',
-            payload: {
-              id: currentTrack.id,
-              title: currentTrack.details.title,
-              albumCoverUrl: currentTrack.details.albumCoverUrl,
-            },
-          });
+          if (validatedTracks.length > 0) {
+            queueDispatch({
+              type: 'SET_VALIDATED_TRACKS',
+              payload: validatedTracks,
+            });
 
-          // Set upcoming tracks
-          const upcoming: Track[] = validatedTracks.slice(1, 4).map((vt) => ({
-            id: vt.id,
-            title: vt.details.title,
-            albumCoverUrl: vt.details.albumCoverUrl,
-          }));
-          updateUpcomingTracks(upcoming);
+            // Set current track
+            const currentTrack = validatedTracks[0];
+            queueDispatch({
+              type: 'SET_CURRENT_TRACK',
+              payload: {
+                id: currentTrack.id,
+                title: currentTrack.details.title,
+                albumCoverUrl: currentTrack.details.albumCoverUrl,
+              },
+            });
 
-          setContentReady();
-        } else {
-          throw new Error('No valid tracks found in playlist');
-        }
+            // Set upcoming tracks
+            const upcoming: Track[] = validatedTracks.slice(1, 4).map((vt) => ({
+              id: vt.id,
+              title: vt.details.title,
+              albumCoverUrl: vt.details.albumCoverUrl,
+            }));
+            updateUpcomingTracks(upcoming);
+
+            setContentReady();
+          } else {
+            throw new Error('No valid tracks found in playlist');
+          }
+        })();
+
+        // Race between loading and timeout
+        await Promise.race([loadingPromise, timeoutPromise]);
       } catch (error) {
         console.error('Error initializing playlist:', error);
         setLoading(false);
@@ -79,7 +89,11 @@ export function RadioPlayer() {
         if (error instanceof YouTubeAPIError) {
           setError(error.message);
         } else {
-          setError('Failed to load playlist. Please refresh the page.');
+          setError(
+            error instanceof Error
+              ? error.message
+              : 'Failed to load playlist. Please refresh the page.'
+          );
         }
       }
     };
@@ -87,7 +101,16 @@ export function RadioPlayer() {
     if (queueState.playlist.length === 0) {
       initializePlaylist();
     }
-  }, []);
+  }, [
+    queueState.playlist.length,
+    setContentReady,
+    setError,
+    setLoading,
+    setPlaylist,
+    updateUpcomingTracks,
+    youtubeService,
+    queueDispatch,
+  ]);
 
   // Update upcoming tracks when queue changes
   const updateQueue = useCallback(

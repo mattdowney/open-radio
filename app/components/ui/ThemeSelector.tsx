@@ -21,7 +21,7 @@ export function ThemeSelector() {
       </button>
 
       <div
-        className="absolute top-full right-0 mt-2 py-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+        className="absolute top-full right-0 mt-2 py-2 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200"
         style={{
           backgroundColor: 'var(--theme-surface)',
           border: '1px solid var(--theme-textSecondary)',

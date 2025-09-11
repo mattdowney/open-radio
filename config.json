@@ -6,7 +6,7 @@
   },
   "branding": {
     "enabled": true,
-    "logoUrl": "/logo.svg",
+    "logoUrl": "/assets/logo.svg",
     "linkUrl": ""
   },
   "features": {
@@ -15,7 +15,8 @@
   },
   "ui": {
     "listenerText": "vibing",
-    "liveText": "LIVE"
+    "liveText": "LIVE",
+    "themeDrawerBackground": "rgba(0, 0, 0, 0.6)"
   },
   "social": {
     "ogImageUrl": "/og-image.png",

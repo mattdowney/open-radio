@@ -4,9 +4,9 @@
 # Run lint-staged to check staged files
 npx lint-staged
 
-# Run linting
+# Run linting on all files
 npm run lint
 
-# Note: Type checking and tests temporarily disabled due to setup issues
-# npm run type-check
-# npm run test:ci
+# Run type checking
+npm run type-check
+

@@ -24,9 +24,9 @@ export function DesignOptionsModal({ isOpen, onClose }: DesignOptionsModalProps)
   return (
     <Dialog.Root open={isOpen} onOpenChange={onClose}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[9998] bg-black/80" />
+        <Dialog.Overlay className="fixed inset-0 z-layer-modals bg-black/80" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-[9999] w-[90vw] max-w-2xl max-h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl focus:outline-none overflow-hidden"
+          className="fixed left-1/2 top-1/2 z-layer-modals w-[90vw] max-w-2xl max-h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-2xl focus:outline-none overflow-hidden"
           style={{
             backgroundColor: 'var(--theme-surface)',
             border: '1px solid var(--theme-textSecondary)',
@@ -115,7 +115,6 @@ export function DesignOptionsModal({ isOpen, onClose }: DesignOptionsModalProps)
                         themeState.currentTheme.id === theme.id
                           ? theme.colors.accent
                           : 'var(--theme-textSecondary)',
-                      ringColor: theme.colors.accent,
                     }}
                   >
                     {/* Theme Preview */}
@@ -214,7 +213,6 @@ export function DesignOptionsModal({ isOpen, onClose }: DesignOptionsModalProps)
                           currentVisualizer === visualizer.type
                             ? 'var(--theme-accent)'
                             : 'var(--theme-textSecondary)',
-                        ringColor: 'var(--theme-accent)',
                       }}
                       disabled={isTransitioning}
                     >

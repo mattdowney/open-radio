@@ -12,11 +12,14 @@ A beautiful, modern radio application that brings the classic radio experience t
 ## ✨ Features
 
 - 🎵 **Seamless Music Streaming** - YouTube integration for unlimited music access
-- 💿 **Beautiful Vinyl Visualization** - Realistic spinning vinyl records with album art
+- 💿 **Multiple Visualizers** - Choose between vinyl records and CD visualizations
+- 🎨 **Dynamic Theme System** - Switch between dark, light, and custom themes
 - 👥 **Real-time Listener Count** - See how many people are tuning in live
-- 🎨 **Dynamic Album Backgrounds** - Blurred album art backgrounds with color extraction
+- 🌈 **Dynamic Album Backgrounds** - Blurred album art backgrounds with color extraction
+- ✨ **Light Ray Effects** - Beautiful animated background effects
 - 📱 **Fully Responsive** - Perfect experience on desktop, tablet, and mobile
-- ⚙️ **Highly Configurable** - Customize everything via environment variables
+- ♿ **Accessibility Features** - Built-in accessibility indicators and support
+- ⚙️ **Highly Configurable** - Customize everything via config.json and environment variables
 - 🔥 **Firebase Integration** - Optional real-time features and analytics
 - 🎭 **Custom Branding** - Make it your own with custom logos and themes
 
@@ -49,11 +52,13 @@ Open [http://localhost:3000](http://localhost:3000) to see your radio in action!
 - **Framework**: [Next.js 14](https://nextjs.org/) with App Router
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **UI Library**: [React 18](https://react.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + Custom CSS
+- **State Management**: React Context with useReducer
 - **Music Source**: [YouTube API](https://developers.google.com/youtube/v3)
 - **Database**: [Firebase Realtime Database](https://firebase.google.com/products/realtime-database) (optional)
+- **Testing**: [Jest](https://jestjs.io/) + [Testing Library](https://testing-library.com/)
 - **Analytics**: [Vercel Analytics](https://vercel.com/analytics) (optional)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Animations**: CSS animations + transitions
 
 ## 📋 Prerequisites
 
@@ -111,12 +116,17 @@ Open Radio is highly configurable through environment variables:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `NEXT_PUBLIC_APP_NAME` | Your radio station name | "Open Radio" | No |
-| `NEXT_PUBLIC_APP_DESCRIPTION` | Station description | "A beautiful radio experience" | No |
 | `NEXT_PUBLIC_YOUTUBE_API_KEY` | YouTube API key for music | - | **Yes** |
 | `NEXT_PUBLIC_PLAYLIST_ID` | Default YouTube playlist | Demo playlist | No |
 | `NEXT_PUBLIC_FIREBASE_ENABLED` | Enable Firebase features | `false` | No |
-| `NEXT_PUBLIC_BRANDING_ENABLED` | Show custom branding | `true` | No |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API key | - | No |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID | - | No |
+
+**Note:** Additional configuration is available in `config.json` including:
+- App name and branding settings
+- UI customization (theme colors, text labels)
+- Feature toggles (analytics, Firebase)
+- Social media metadata
 
 See [.env.local.example](./.env.local.example) for all available options.
 
@@ -147,10 +157,15 @@ For detailed architecture information, see [docs/ARCHITECTURE.md](./docs/ARCHITE
 ### Available Scripts
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
+npm run dev             # Start development server
+npm run build           # Build for production
+npm run start           # Start production server
+npm run lint            # Run ESLint
+npm run lint:fix        # Fix ESLint issues
+npm run test            # Run tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage
+npm run format          # Format code with Prettier
 ```
 
 ### Code Style
@@ -200,14 +215,6 @@ Open Radio can be deployed on various platforms:
 - **Self-hosted** - On your own server
 
 See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for platform-specific instructions.
-
-## 📈 Roadmap
-
-- [ ] **v1.0**: Stable release with comprehensive documentation
-- [ ] **v1.1**: Plugin system for custom music sources
-- [ ] **v1.2**: Advanced theming and customization
-- [ ] **v1.3**: Multi-room/multi-station support
-- [ ] **v2.0**: Social features and user accounts
 
 See [GitHub Projects](https://github.com/your-username/open-radio/projects) for detailed roadmap.
 

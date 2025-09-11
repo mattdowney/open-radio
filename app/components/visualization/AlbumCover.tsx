@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
 import { cn } from '@/app/lib/utils';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface AlbumCoverProps {
   src?: string;
@@ -32,6 +33,8 @@ export function AlbumCover({
   isLoading = false,
 }: AlbumCoverProps) {
   const [imageLoading, setImageLoading] = useState(true);
+  const { state } = useTheme();
+  const currentTheme = state.previewTheme || state.currentTheme;
 
   // If in loading state or no src, show skeleton
   if (isLoading || !src) {
@@ -74,6 +77,11 @@ export function AlbumCover({
         style={{
           willChange: 'transform, opacity, filter',
           backfaceVisibility: 'hidden',
+          ...(currentTheme.id === 'vaporwave' && {
+            imageRendering: 'pixelated' as React.CSSProperties['imageRendering'],
+            filter: 'contrast(1.4) saturate(1.8) hue-rotate(300deg) blur(0.5px)',
+            mixBlendMode: 'overlay',
+          }),
         }}
         onLoad={() => {
           setImageLoading(false);
@@ -84,7 +92,7 @@ export function AlbumCover({
           }
         }}
         priority={priority}
-        quality={size === 'lg' ? 90 : 75}
+        quality={currentTheme.id === 'vaporwave' ? 50 : size === 'lg' ? 90 : 75}
       />
       {imageLoading && (
         <Skeleton

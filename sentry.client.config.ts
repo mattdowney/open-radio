@@ -1,11 +1,11 @@
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  
+
   // Performance monitoring
   tracesSampleRate: 0.1,
-  
+
   // Error filtering and enhancement
   beforeSend(event) {
     // Filter out non-critical errors
@@ -18,22 +18,19 @@ Sentry.init({
         return null; // Don't spam with API quota errors
       }
     }
-    
+
     return event;
   },
-  
+
   // Environment configuration
   environment: process.env.NODE_ENV,
-  
+
   // Release tracking
   release: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'development',
-  
-  // Enable capture of unhandled promise rejections
-  captureUnhandledRejections: true,
-  
+
   // Additional options
   debug: process.env.NODE_ENV === 'development',
-  
+
   // Privacy settings
   beforeBreadcrumb(breadcrumb) {
     // Filter sensitive data from breadcrumbs

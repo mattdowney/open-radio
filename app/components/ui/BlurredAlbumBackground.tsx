@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { usePageVisibility } from '../../hooks/usePageVisibility';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface BlurredAlbumBackgroundProps {
   className?: string;
@@ -23,7 +23,36 @@ const BlurredAlbumBackground = ({
 }: BlurredAlbumBackgroundProps) => {
   const [displayUrl, setDisplayUrl] = useState(albumCoverUrl);
   const [showBlack, setShowBlack] = useState(false);
-  const _isPageVisible = usePageVisibility();
+  const { state } = useTheme();
+
+  // Generate theme-specific filter based on current or preview theme
+  const getThemeFilter = (themeId: string, baseBlur: number) => {
+    const filters = {
+      dark: `blur(${baseBlur}px) brightness(0.8) contrast(1.2) saturate(1.1)`,
+      light: `blur(${baseBlur}px) brightness(1.2) contrast(0.9) saturate(0.9) sepia(0.1)`,
+      sunset: `blur(${baseBlur}px) brightness(1.0) contrast(1.2) saturate(0) grayscale(1)`, // Desaturate for sunset
+      ocean: `blur(${baseBlur}px) brightness(0.85) contrast(1.2) saturate(1.4) hue-rotate(-25deg) sepia(0.2)`,
+      vaporwave: `blur(${baseBlur}px) brightness(1.1) contrast(1.4) saturate(1.8) hue-rotate(280deg) sepia(0.3)`,
+    };
+    return (
+      filters[themeId as keyof typeof filters] ||
+      `blur(${baseBlur}px) brightness(1.1) saturate(1.5)`
+    );
+  };
+
+  // Only apply sunset's grayscale when sunset is actually being viewed (selected or previewed)
+  const getFilterForCurrentTheme = (currentThemeId: string, baseBlur: number) => {
+    // If we're previewing sunset or sunset is selected, use sunset filter
+    if (currentThemeId === 'sunset') {
+      return getThemeFilter('sunset', baseBlur);
+    }
+    // Otherwise, use the theme filter but never the sunset grayscale
+    return getThemeFilter(currentThemeId, baseBlur);
+  };
+
+  // Use preview theme if available, otherwise current theme
+  const currentTheme = state.previewTheme || state.currentTheme;
+  const themeFilter = getFilterForCurrentTheme(currentTheme.id, blurAmount);
 
   // Immediately fade to black when shouldFadeToBlack is true
   useEffect(() => {
@@ -72,8 +101,9 @@ const BlurredAlbumBackground = ({
             key={displayUrl}
             className="absolute inset-0 w-full h-full"
             style={{
-              filter: `blur(${blurAmount}px) brightness(1.1) saturate(1.5)`,
+              filter: themeFilter,
               willChange: 'opacity',
+              transition: 'filter 300ms ease-in-out',
             }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -86,10 +116,14 @@ const BlurredAlbumBackground = ({
             <img
               src={displayUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute w-full h-full object-cover"
               style={{
-                transform: 'scale(3) translate3d(0,0,0)',
+                transform: 'scale(1.2) translate3d(0,0,0)',
                 willChange: 'auto',
+                top: '-10%',
+                left: '-10%',
+                width: '120%',
+                height: '120%',
               }}
             />
           </motion.div>
@@ -98,6 +132,22 @@ const BlurredAlbumBackground = ({
 
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+
+      {/* Sunset theme warm gradient overlay */}
+      {currentTheme.id === 'sunset' && displayUrl && !showBlack && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(
+              135deg,
+              rgba(244, 196, 48, 0.9) 0%,
+              rgba(236, 95, 103, 0.8) 50%,
+              rgba(171, 71, 166, 0.7) 100%
+            )`,
+            mixBlendMode: 'screen',
+          }}
+        />
+      )}
     </div>
   );
 };

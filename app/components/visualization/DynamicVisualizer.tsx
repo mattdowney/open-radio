@@ -1,6 +1,7 @@
 'use client';
 
 import { useVisualizer } from '../../contexts/VisualizerContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { VisualizerProps } from '../../types/visualizer';
 import { cn } from '@/app/lib/utils';
 
@@ -12,8 +13,12 @@ export function DynamicVisualizer({
   className = '',
 }: VisualizerProps) {
   const { currentVisualizer, availableVisualizers, isTransitioning } = useVisualizer();
+  const { state: themeState } = useTheme();
 
-  const visualizerConfig = availableVisualizers.find((v) => v.type === currentVisualizer);
+  // Override visualizer for vaporwave theme - always use CD
+  const effectiveVisualizer = themeState.currentTheme.id === 'vaporwave' ? 'cd' : currentVisualizer;
+
+  const visualizerConfig = availableVisualizers.find((v) => v.type === effectiveVisualizer);
 
   if (!visualizerConfig) {
     // Fallback to vinyl if current visualizer not found
@@ -39,7 +44,7 @@ export function DynamicVisualizer({
       {/* Transition overlay */}
       {isTransitioning && (
         <div
-          className="absolute inset-0 z-10 rounded-full transition-opacity duration-300"
+          className="absolute inset-0 rounded-full transition-opacity duration-300"
           style={{
             backgroundColor: 'var(--theme-background)',
             opacity: 0.8,

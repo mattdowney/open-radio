@@ -3,9 +3,10 @@
 import { cn } from '@/app/lib/utils';
 import Image from 'next/image';
 import { Skeleton } from '@/app/components/ui/Skeleton';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VisualizerProps } from '../../types/visualizer';
 import { usePageVisibility } from '../../hooks/usePageVisibility';
+import { motion } from 'framer-motion';
 
 export function CDVisualizer({
   src,
@@ -14,10 +15,47 @@ export function CDVisualizer({
   isLoading = false,
   className = '',
 }: VisualizerProps) {
-  const [, setImageLoading] = useState(true);
+  const [isAnimationReady, setIsAnimationReady] = useState(false);
   const isPageVisible = usePageVisibility();
 
   const spinningClass = isPlaying && isPageVisible ? 'cd-spinning' : 'cd-paused';
+
+  // Animation variants for coordinated entrance
+  const cdVariants = {
+    hidden: {
+      scale: 0.95, // Much more subtle zoom
+      opacity: 0,
+      y: 15, // Much smaller vertical movement
+    },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      y: 0, // Move to final position
+      transition: {
+        duration: 0.2, // Much faster
+        ease: 'easeOut' as const,
+      },
+    },
+  };
+
+  const handleImageLoad = () => {
+    // Immediate animation trigger - no complex state management
+    setTimeout(() => {
+      setIsAnimationReady(true);
+    }, 20); // Very short delay for immediate elegance
+  };
+
+  // Simplified fallback mechanism
+  useEffect(() => {
+    if (!isLoading && src && !isAnimationReady) {
+      // Fallback timeout to force animation if image load event doesn't fire
+      const fallbackTimer = setTimeout(() => {
+        setIsAnimationReady(true);
+      }, 2000); // Shorter fallback time
+
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [src, isLoading, isAnimationReady]);
 
   // If loading or no src, show skeleton
   if (isLoading || !src) {
@@ -32,7 +70,12 @@ export function CDVisualizer({
   }
 
   return (
-    <div className={cn('relative aspect-square w-full drop-shadow-2xl', className)}>
+    <motion.div
+      className={cn('relative aspect-square w-full drop-shadow-2xl', className)}
+      variants={cdVariants}
+      initial="hidden"
+      animate={isAnimationReady ? 'visible' : 'hidden'}
+    >
       {/* Main CD container */}
       <div
         className="relative w-full h-full rounded-full overflow-hidden"
@@ -65,7 +108,7 @@ export function CDVisualizer({
                 'object-cover rounded-full opacity-85',
                 'transition-opacity duration-300'
               )}
-              onLoad={() => setImageLoading(false)}
+              onLoad={handleImageLoad}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               priority
               quality={90}
@@ -96,7 +139,7 @@ export function CDVisualizer({
 
           {/* Outermost black ring */}
           <div
-            className="absolute top-1/2 left-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full z-30"
+            className="absolute top-1/2 left-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{
               background:
                 'radial-gradient(circle at center, rgba(20,20,20,0.9) 0%, rgba(0,0,0,0.95) 100%)',
@@ -146,7 +189,7 @@ export function CDVisualizer({
 
         {/* Metallic CD base layer */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-10"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: `
               radial-gradient(circle at center,
@@ -164,7 +207,7 @@ export function CDVisualizer({
 
         {/* Radial light streaks - like reference image */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none opacity-60 z-20"
+          className="absolute inset-0 rounded-full pointer-events-none opacity-60"
           style={{
             background: `
               conic-gradient(from 0deg at center,
@@ -205,7 +248,7 @@ export function CDVisualizer({
 
         {/* Multi-colored transparent refractions overlay */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none opacity-40 z-35"
+          className="absolute inset-0 rounded-full pointer-events-none opacity-40"
           style={{
             background: `
               radial-gradient(
@@ -237,7 +280,7 @@ export function CDVisualizer({
 
         {/* Bright radial highlight from center */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-40"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: `
               radial-gradient(
@@ -254,7 +297,7 @@ export function CDVisualizer({
 
         {/* Metallic overlay for entire CD */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-45"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: `
               radial-gradient(
@@ -271,7 +314,7 @@ export function CDVisualizer({
 
         {/* Additional metallic sheen */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-46"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: `
               linear-gradient(
@@ -289,7 +332,7 @@ export function CDVisualizer({
 
         {/* Radial light reflection */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-25"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: `
               radial-gradient(
@@ -306,7 +349,7 @@ export function CDVisualizer({
 
         {/* Directional highlight */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-30"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background: `
               linear-gradient(
@@ -324,7 +367,7 @@ export function CDVisualizer({
 
         {/* Edge beveling and depth */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-50"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             boxShadow: `
               inset 0 0 0 1px rgba(255,255,255,0.6),
@@ -336,12 +379,12 @@ export function CDVisualizer({
 
         {/* Outer rim shadow */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none z-60"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             boxShadow: '0 0 0 1px rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.25)',
           }}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }

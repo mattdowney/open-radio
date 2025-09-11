@@ -1,4 +1,4 @@
-export type VisualizerType = 'vinyl' | 'cd' | 'abstract';
+export type VisualizerType = 'vinyl' | 'cd';
 
 export interface VisualizerProps {
   src?: string;

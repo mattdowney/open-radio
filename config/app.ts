@@ -20,6 +20,11 @@ export function getAppConfigSync() {
       logoUrl: config.branding.logoUrl,
       linkUrl: config.branding.linkUrl,
     },
+    ui: {
+      listenerText: config.ui.listenerText,
+      liveText: config.ui.liveText,
+      themeDrawerBackground: config.ui.themeDrawerBackground,
+    },
   };
 
   return appConfigCache;
@@ -39,6 +44,11 @@ export async function getAppConfig() {
       enabled: config.branding.enabled,
       logoUrl: config.branding.logoUrl,
       linkUrl: config.branding.linkUrl,
+    },
+    ui: {
+      listenerText: config.ui.listenerText,
+      liveText: config.ui.liveText,
+      themeDrawerBackground: config.ui.themeDrawerBackground,
     },
   };
 

@@ -127,7 +127,12 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         const newId = trackListener();
       } catch (error: unknown) {
         console.error('Error clearing listeners:', error);
-        if (error.toString().includes('permission_denied')) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'toString' in error &&
+          error.toString().includes('permission_denied')
+        ) {
           console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
           console.error(
             'Please update your Firebase Realtime Database rules to allow read/write access'
@@ -147,7 +152,12 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         // Data logged in development only
       } catch (error: unknown) {
         console.error('Error logging listeners:', error);
-        if (error.toString().includes('permission_denied')) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'toString' in error &&
+          error.toString().includes('permission_denied')
+        ) {
           console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing read access');
           console.error('Please update your Firebase Realtime Database rules to allow read access');
           permissionsDenied = true;
@@ -175,7 +185,12 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         }, 500);
       } catch (error: unknown) {
         console.error('Error during forced heartbeat:', error);
-        if (error.toString().includes('permission_denied')) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'toString' in error &&
+          error.toString().includes('permission_denied')
+        ) {
           permissionsDenied = true;
           console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
         }
@@ -247,12 +262,17 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
             if (snapshot.exists()) {
               const data = snapshot.val();
               const count = Object.keys(data).length;
-              Object.entries(data).forEach(([id, val]: [string, ListenerRecord]) => {});
+              Object.entries(data as Record<string, ListenerRecord>).forEach(([_id, _val]) => {});
             } else {
             }
           })
           .catch((error) => {
-            if (error.toString().includes('permission_denied')) {
+            if (
+              error &&
+              typeof error === 'object' &&
+              'toString' in error &&
+              error.toString().includes('permission_denied')
+            ) {
               console.error('⛔️ PERMISSION DENIED: Please update your Firebase rules');
             }
           });
@@ -298,7 +318,12 @@ async function forceCleanupAllStaleEntries() {
     }
   } catch (error: unknown) {
     console.error('Error during forced cleanup:', error);
-    if (error.toString().includes('permission_denied')) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'toString' in error &&
+      error.toString().includes('permission_denied')
+    ) {
       console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing delete access');
       console.error('Please update your Firebase Realtime Database rules to allow write access');
       permissionsDenied = true;
@@ -332,7 +357,12 @@ async function cleanupStaleListeners() {
     }
   } catch (error: unknown) {
     console.error('Error cleaning up stale listeners:', error);
-    if (error.toString().includes('permission_denied')) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'toString' in error &&
+      error.toString().includes('permission_denied')
+    ) {
       permissionsDenied = true;
     }
   }
@@ -378,7 +408,12 @@ export function trackListener() {
       environment: process.env.NODE_ENV || 'unknown',
     }).catch((error) => {
       console.error('Error registering listener:', error);
-      if (error.toString().includes('permission_denied')) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'toString' in error &&
+        error.toString().includes('permission_denied')
+      ) {
         permissionsDenied = true;
         console.error('⛔️ PERMISSION DENIED: Your Firebase rules are preventing write access');
         console.error('Please run window.__firebaseDebug.fixPermissionIssue() for instructions');
@@ -389,7 +424,12 @@ export function trackListener() {
     onDisconnect(clientRef)
       .remove()
       .catch((error) => {
-        if (error.toString().includes('permission_denied')) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'toString' in error &&
+          error.toString().includes('permission_denied')
+        ) {
           permissionsDenied = true;
         }
       });
@@ -402,7 +442,12 @@ export function trackListener() {
           active: true,
           environment: process.env.NODE_ENV || 'unknown',
         }).catch((error) => {
-          if (error.toString().includes('permission_denied')) {
+          if (
+            error &&
+            typeof error === 'object' &&
+            'toString' in error &&
+            error.toString().includes('permission_denied')
+          ) {
             permissionsDenied = true;
             console.error('⛔️ Firebase permission denied during heartbeat');
             clearInterval(heartbeatInterval);
@@ -484,7 +529,12 @@ export function getListenerCount(callback: (count: number) => void): () => void 
     },
     (error) => {
       console.error('Error getting listener count:', error);
-      if (error.toString().includes('permission_denied')) {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'toString' in error &&
+        error.toString().includes('permission_denied')
+      ) {
         console.error(
           '⛔️ PERMISSION DENIED: Your Firebase rules are preventing read access to listeners'
         );

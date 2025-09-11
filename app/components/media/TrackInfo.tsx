@@ -108,14 +108,14 @@ export function TrackInfo({
     >
       {/* Gradient overlays */}
       <div
-        className="absolute right-0 top-0 h-full w-8 z-10 transition-[background] duration-200"
+        className="absolute right-0 top-0 h-full w-8 transition-[background] duration-200"
         style={{
           background: `linear-gradient(to right, transparent, var(--fade-color, ${bgColor}) 40%, var(--fade-color, ${bgColor}))`,
         }}
       />
       {groupHoverBgColor && (
         <div
-          className="absolute right-0 top-0 h-full w-8 z-10 opacity-0 group-hover:opacity-100 transition-[opacity,background] duration-200"
+          className="absolute right-0 top-0 h-full w-8 opacity-0 group-hover:opacity-100 transition-[opacity,background] duration-200"
           style={{
             background: `linear-gradient(to right, transparent, var(--hover-fade-color, ${groupHoverBgColor}) 40%, var(--hover-fade-color, ${groupHoverBgColor}))`,
           }}
@@ -123,7 +123,7 @@ export function TrackInfo({
       )}
 
       {/* Content */}
-      <div className="relative z-0">
+      <div className="relative">
         {/* Base truncated text */}
         <div
           ref={textRef}

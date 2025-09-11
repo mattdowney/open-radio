@@ -21,6 +21,7 @@ interface ConfigFile {
   ui: {
     listenerText: string;
     liveText: string;
+    themeDrawerBackground: string;
   };
   social: {
     ogImageUrl: string;
@@ -89,6 +90,8 @@ export function getConfigSync(): ConfigFile {
     ui: {
       listenerText: process.env.NEXT_PUBLIC_LISTENER_TEXT || 'vibing',
       liveText: process.env.NEXT_PUBLIC_LIVE_TEXT || 'LIVE',
+      themeDrawerBackground:
+        process.env.NEXT_PUBLIC_THEME_DRAWER_BACKGROUND || 'rgba(0, 0, 0, 0.6)',
     },
     social: {
       ogImageUrl: process.env.NEXT_PUBLIC_OG_IMAGE_URL || '/og-image.png',
@@ -142,6 +145,10 @@ export async function getConfig(): Promise<ConfigFile> {
       listenerText:
         process.env.NEXT_PUBLIC_LISTENER_TEXT || fileConfig.ui?.listenerText || 'vibing',
       liveText: process.env.NEXT_PUBLIC_LIVE_TEXT || fileConfig.ui?.liveText || 'LIVE',
+      themeDrawerBackground:
+        process.env.NEXT_PUBLIC_THEME_DRAWER_BACKGROUND ||
+        fileConfig.ui?.themeDrawerBackground ||
+        'rgba(0, 0, 0, 0.6)',
     },
     social: {
       ogImageUrl:

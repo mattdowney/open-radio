@@ -44,6 +44,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
 
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <ThemeProvider>
           <VisualizerProvider>{children}</VisualizerProvider>
