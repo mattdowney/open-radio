@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "listeners": {
+      ".read": true,
+      ".write": true,
+      "$client_id": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['timestamp', 'active']) && newData.child('timestamp').isNumber() && newData.child('timestamp').val() <= now"
+      }
+    }
+  }
+}
